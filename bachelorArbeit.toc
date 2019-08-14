@@ -1,0 +1,12 @@
+\select@language {ngerman}
+\contentsline {section}{\numberline {1}Einleitung}{2}
+\contentsline {section}{\numberline {2}Grundlagen}{2}
+\contentsline {subsection}{\numberline {2.1}Lineare Programmierung}{2}
+\contentsline {subsection}{\numberline {2.2}Biologischer Hintergrund}{2}
+\contentsline {section}{\numberline {3}Ausgangslage}{3}
+\contentsline {section}{\numberline {4}Vorgehen}{3}
+\contentsline {subsection}{\numberline {4.1}Vorbereitung}{3}
+\contentsline {subsection}{\numberline {4.2}Notationen}{4}
+\contentsline {subsection}{\numberline {4.3}Assembly}{4}
+\contentsline {subsection}{\numberline {4.4}Auswertung}{7}
+\contentsline {section}{Erkl\"arung}{8}
