@@ -1,12 +1,12 @@
 \select@language {ngerman}
-\contentsline {section}{\numberline {1}Einleitung}{2}
-\contentsline {section}{\numberline {2}Grundlagen}{2}
-\contentsline {subsection}{\numberline {2.1}Lineare Programmierung}{2}
-\contentsline {subsection}{\numberline {2.2}Biologischer Hintergrund}{2}
-\contentsline {section}{\numberline {3}Ausgangslage}{3}
-\contentsline {section}{\numberline {4}Vorgehen}{3}
-\contentsline {subsection}{\numberline {4.1}Vorbereitung}{3}
-\contentsline {subsection}{\numberline {4.2}Notationen}{4}
-\contentsline {subsection}{\numberline {4.3}Assembly}{4}
-\contentsline {subsection}{\numberline {4.4}Auswertung}{7}
-\contentsline {section}{Erkl\"arung}{8}
+\contentsline {section}{\numberline {1}Einleitung}{2}{section.1}
+\contentsline {section}{\numberline {2}Grundlagen}{2}{section.2}
+\contentsline {subsection}{\numberline {2.1}Lineare Programmierung}{2}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Contig-Assembly}{2}{subsection.2.2}
+\contentsline {section}{\numberline {3}Ausgangslage}{3}{section.3}
+\contentsline {section}{\numberline {4}Vorgehen}{3}{section.4}
+\contentsline {subsection}{\numberline {4.1}Vorbereitung}{4}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}Notationen}{4}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}Assembly}{4}{subsection.4.3}
+\contentsline {section}{\numberline {5}Auswertung}{7}{section.5}
+\contentsline {section}{Erkl\"arung}{9}{figure.3}
