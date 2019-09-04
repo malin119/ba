@@ -1,0 +1,240 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Uni Duesseldorf
+% Lehrstuhl fuer Datenbanken und Informationssysteme
+% Vorlage fuer Bachelor-/Masterarbeiten
+% Optimiert fuer den Original-Latex-Kompiler LATEX.EXE (LaTeX=>PS=>PDF)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Ueberarbeitung für pdflatex (LaTeX=>PDF)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Vorlage Changelog:
+% 10.09.2015 (Matthias Liebeck): Nummerierung des Inhaltsverzeichnis nun römisch, Beispiel für einen Anhang eingebaut, \raggedbottom hinter sections eingefügt
+% 11.07.2018 (Matthias Liebeck): Ersetzung des Bibliographiestils, Einsatz von Biber
+% 04.09.2018 (Matthias Liebeck):
+%   * Bibtex: unnötige Bibtexfelder beim Rendern ausblenden (thx @ Markus Brenneis)
+%   * ngerman: "et al." im BibTeX für drei oder mehr Autoren
+%   * Neuer Befehl \sectionforcestartright: Sections immer rechts beginnen (thx @ Philipp Grawe)
+%   * ngerman: Deutsche Anführungszeichen im Literaturverzeichnis (thx @ Markus Brenneis)
+%   * ngerman: Deutsche Anführungszeichen im Literaturverzeichnis (thx @ Markus Brenneis)
+% 16.10.2018 (Matthias Liebeck): Zwei fixes an \sectionforcestartright (thx @ Markus Brenneis)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% BEGINN EINSTELLUNG FUER DIE ARBEIT. UNBEDINGT ERFORDERLICH! %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Geben Sie Ihren Namen hier an:
+\newcommand{\bearbeiter}{Marvin Lindemann}
+
+% Geben Sie hier den Titel Ihrer Arbeit an:
+\newcommand{\titel}{Contig-Assembly der MHC-Region mittels Linearer Programmierung}
+
+% Geben Sie das Datum des Beginns und Ende der Bachelorarbeit ein:
+\newcommand{\beginndatum}{09. Juni 2019}
+\newcommand{\abgabedatum}{09.~September~2019}
+
+% Geben Sie die Namen des Erst- und Zweitgutachters an:
+\newcommand{\erstgutachter}{Prof. Dr. Gunnar W. Klau}
+\newcommand{\zweitgutachter}{Dr. Alexander Dilthey}
+
+% Falls Sie die Arbeit zweiseitig ausdrucken wollen,
+% benutzen Sie die folgende Zeile mit
+% \AN fuer zweiseitigen Druck
+% \AUS fuer einseitigen Druck
+\newcommand{\zweiseitig}{\AUS}
+
+% Falls Sections immer rechts beginnen sollen. Gerade für Masterarbeiten
+% interessant. Bei kurzen Bachelorarbeiten eher weniger zu verwenden.
+\newcommand{\sectionforcestartright}{\AUS}
+%\newcommand{\sectionforcestartright}{\AN}
+
+% Falls die Arbeit in englischer Sprache verfasst 
+% werden soll, dann benutzen Sie die folgende Zeile mit
+% englisch fuer englische Sprache
+% deutsch fuer deutsche Sprache
+\newcommand{\sprache}{deutsch}
+
+% Hier wird eingestellt, ob es sich bei der Arbeit um eine Bachelor- 
+% oder Masterarbeit handelt (unpassendes auskommentieren!):
+\newcommand{\arbeit}{Bachelorarbeit}
+%~ \newcommand{\arbeit}{Masterarbeit}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% ENDE EINSTELLUNGEN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Die folgende Zeile NICHT EDITIEREN oder loeschen
+\input{titelmakros}
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% BEGINN TEXTTEIL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Text entweder direkt hier hinein schreiben oder, im Sinne der
+% besseren Uebersichtlich- und Bearbeitbarkeit mittels \input die
+% einzelnen Textteile hier einbinden.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{einleitung2}
+
+\section{Formalisierung}\raggedbottom 
+
+Die vorliegenden Daten der Manchot-Forschungsgruppe bestehen aus zwei Dateien: 
+\begin{enumerate}
+\item einer Liste von allen Contigs und deren Länge gemessen in der Anzahl an Basenpaaren, die im Contig auftreten
+\item einer Datei mit den eingangserwähnten Constraints.
+\end{enumerate}
+Letztere besitzt folgenden dreispaltigen Aufbau:
+\begin{align*}
+&a \quad b \quad 1000\\
+&a \quad b \quad 1100\\
+&b \quad c \quad 3000\\
+&a \quad c \quad 6000
+\end{align*}
+Dabei entspricht jede Zeile einem Constraint. Die ersten beiden Zeilen geben jeweils die beiden involvierten Contigs an. In der dritten Spalte sind die gemessenen Distanzen angegeben. Diese sind als Entfernung vom rechten Rand des ersten Contigs zum linken Rand des zweiten Contigs in Basenpaaren zu interpretieren. Negative Distanzen sind auf Überlagerungen einzelner Contigs zurückzuführen. Zusätzlich zu den Constraints aus den Long-Reads stammen etwa 2\% der Constraints direkt aus der Illumina Sequenzierung. Hier wurde mehrmals die Distanz zwischen benachbarte Contigs gemessen und der Durchschnitt daraus berechnet. Dadurch können auch nicht ganzzahlige Werte als Distanzen auftreten.
+
+\subsection{Anforderungen an die Lösung}
+Nun wollen wir einige Gütekriterien für mögliche Lösungen festlegen, um während der Bearbeitung Orientierungspunkte für die weitere Optimierung des Algorithmus zu haben und um diesen nach Abschluss anhand dieser Kriterien zu bewerten.
+Folgende Punkte sollen beachtet werden:
+\begin{enumerate}
+\item Wenn mehrere Constraints eine ähnliche Distanz zwischen zwei Contigs sehen, sollten diese Contigs auch die Distanz möglichst gut erfüllen. Der Schwellwert hierbei liegt bei zwei Constraints.
+\item Ein Großteil der restlichen Constraints sollte auch zu der Positionierung passen.
+\item Es sollten möglichst wenig Contigs nahe zueinander positioniert werden, die keine gemeinsamen Constraints aufweisen. Diese Situation wird durch Abbildung \ref{gespallten} illustriert. In der Abbildung werden die Constraints durch gerichtete Kanten zwischen den Contigs dargestellt. Der oberer Teilabschnitt zeigt eine Lösung, bei der die Bedingung nicht erfüllt wurde. Realistischer ist jedoch, dass hierbei ein Teilblock bestehend aus Contig 12 und Contig 32 doppelt in dem DNA-Strang vorkommt und bei der Lösung des Problems zwei separate Stränge ineinander verflochten wurden. Dies ist in der unteren Bildhälfte dargestellt.
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{bilder/gespallten}
+	\end{center}
+	\caption{verflochtene Stränge}
+	\label{gespallten}
+\end{figure}
+	
+\item Die Entfernung vom ersten zum letzten Contig sollte zwischen 4,8 Millionen und 5 Millionen Basenpaare lang sein, da dies die ungefähre Gesamtlänge des Strangs ist.
+\item Bei einer Lösung wäre es zudem gut, wenn man Informationen darüber besitzen würde, wie wahrscheinlich es ist, ob verschiedene Teilgebiete tatsächlich so im Strang auftreten. Dabei wäre zum Beispiel eine Unterteilung in „sichere“ und „unsichere“ Gebiete interessant.
+\end{enumerate}
+
+Nun wollen wir konkretisieren, bis zu welchem Abstand Constraints ähnliche Distanzen haben. Dazu betrachten wir, wie die Standardabweichung der Distanzen von Constraints verteilt ist.
+In der Abbildung \ref{std} werden die zu einem Basenpaar zugehörigen Constraints gegen ihre Standardabweichung geplottet. 
+Dabei wurden pro Basenpaar die jeweiligen Distanzen der Constraints zu einer (Multi-)Menge zusammengefasst. Es wurde symmetrisch vorgegangen, das heißt Paare der Form (a,b) und (b,a) werden in der gleichen Menge behandelt. Ferner wurden Mengen mit einem Element nicht berücksichtigt, da es hier keine Abweichung gibt. Für die jeweiligen Mengen wurden dann die Standardabweichungen berechnet, der Größe nach geordnet und dann mit Berücksichtigung dieser Ordnung geplottet.
+Der Plot wird mit zwei Skalierungen angegeben: Auf der linken Seite sieht man eine logarithmische Skalierung, während der rechte Plot eine lineare Skalierung verwendet.
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=0.8\textwidth]{bilder/std}
+	\end{center}
+	\caption{Standardabweichung der Distanzwerte}
+	\label{std}
+\end{figure}
+
+
+
+
+Eine optische Betrachtung der Plots legt folgende Interpretation nahe: 
+Es gibt einen Bereich der natürlichen Abweichung in der Datenmenge. Dies entspricht dem relativ flachen Anfangsbereich des Graphen. Ab einem gewissen Punkt "explodieren" die Werte. Hier ist die Standardabweichung innerhalb der Constraints so hoch, dass man nicht mehr von natürlicher Abweichung innerhalb der Daten ausgehen kann. Die orangene Linie grenzt diese Bereiche intuitiv voneinander ab. 
+Diese liegt bei einer Standardabweichung von 500 Basenpaaren. 
+Somit unterstützen sich Constraints, deren Distanzwerte sich nicht um mehr als 500 Basenpaare unterscheiden.
+
+Um die oben genannten Forderungen an eine Lösung zu erfüllen, ist es notwendig die Repeats auszumachen und die Constraints auf diese Repeats aufzuteilen. Dazu halten wir uns an das Prinzip: $\glqq$so viel wie nötig, so wenig wie möglich$\grqq$.
+Um dies sicherzustellen, sollte ein Contig, der mehrfach in der DNA vorkommen soll, zwei Punkte für jede seiner Versionen erfüllen:
+
+\begin{enumerate}
+\item Es sollte mindestens ein Contig in der Nachbarschaft liegen, zu welchem es zwei oder mehr Constraints gibt.
+\item Sowohl unter den Vorgängern als auch unter den Nachfolgern des Contigs, sollte es je einen Contig geben, der einen gemeinsamen Constraint aufweist.
+\item Sowohl zu einem der Vorgängern als auch zu einem der Nachfolgern des Contigs, sollte es ein Constraint mit dem Contig geben.
+\end{enumerate}
+Der erste Punkt soll sicherstellen, dass es nicht einfach ein Fehler in den Daten ist. Der zweite Punkt stellt sicher, dass der richtige Contig als Repeat markiert wurde. Wenn der Distanzwert eines Constraints nicht erfüllt ist, ist erstmal nicht klar, welcher der beiden beteiligten Contigs eine Repeat-Version haben soll.
+
+ % Gebiete anders zueinander stehen, als sie es gerade tun, so ist nicht klar welche der beiden Gebiete ein Repeat besitzt. Daher ist es Sinnvoll dass die Repeatversion Constraints zu beiden Seiten haben muss, um sich in den Strang zu integrieren.
+%Denn wenn viele Constraints zwischen zwei Gebiete nahlegen, dass diese Gebiete anders zueinander stehen, als sie es gerade tun, so ist nicht klar welche der beiden Gebiete ein Repeat besitzt. Daher ist es Sinnvoll dass die Repeatversion Constraints zu beiden Seiten haben muss, um sich in den Strang zu integrieren.
+\section{Das lineare Programm}
+\subsection{Eine kurze Einführung}
+Die Problemstellung in dieser Arbeit lässt sich als lineares Programm (kurz LP) formulieren. In der linearen Programmierung möchten wir, unter Berücksichtigung von linearen Nebenbedingungen an die Funktionsparameter, eine lineare Funktion maximieren oder minimieren.
+Formal mathematisch lässt sich der Minimierungsfall so fassen:
+\begin{align*}
+	Gegeben:&\quad c \in \mathbb{R}^{n},\ A \in \mathbb{R}^{n \times m},\ b \in \mathbb{R}^{m} \\
+	Gesucht:&\quad \argmin_{ x\in \mathbb{R}^n}\{c^Tx\,|\, Ax \leq b\}
+\end{align*}
+Dabei wird folgende Notation verwendet:
+\begin{description}
+\item[\quad Variablen] $x_1,..., x_n$
+\item[\quad Zielfunktion]  $c^Tx = \sum_{i=1}^n c_i x_i$
+\item[\quad Nebenbedingungen]  $Ax \leq b \ \Leftrightarrow\ \sum_{i=1}^n a_{ji} x_i \leq b_j, \ j = 1,...,n$
+\end{description}
+Lineare Programme lassen sich in Polynomialzeit berechnen. Daher eignen sie sich oft als Werkzeug für verschiedenste Probleme. Es ist auch möglich, den Definitionsraum der Variablen (teilweise) auf ganze Zahlen zu beschränken. Dies bezeichnet man dann als ein ganzahliges lineares Programm (kurz ILP). ILPs bieten einige Möglichkeiten die mit LPs nicht umzusetzen wären. Sie sind dafür aber NP-schwer und somit wahrscheinlich nicht polynomialzeitberechenbar.
+
+\subsection{Assembly als LP}
+Im Folgenden bezeichnet $C$ die Menge aller Contigs und $D$ die Multimenge aller Constraints.
+Wir möchten die Contigs so positionieren, dass der durchschnittliche Fehler aller Constraints möglich klein ist. Als Formel:
+\[ \pos = \argmin_{\pos\,:\, C \rightarrow \mathbb{N}} \ \sum_{(a,b,\delta) \in D} |\pos(b) - \pos(a) - \delta| \]
+Um daraus ein lineares Programm zu machen, führen wir für jeden Constraint $(a,b,\delta)$ aus $D$ eine Hilfsvariable $\varepsilon$ ein:
+\[ \varepsilon = |\pos(b) - \pos(a) - \delta| \]
+Mit Hilfe dieser Variablen können wir die zu minimierende Zielfunktion wie folgt darstellen:
+\begin{align*}
+\quad& \sum_{d \in D} \varepsilon_{d}
+\end{align*}
+Nun müssen wir noch die Informationen über die Fehler, also $\varepsilon = |\pos(b) - \pos(a) - \delta|$, einbauen. Da wir ohnehin die Summe der Fehler minimieren wollen, ist es ausreichend, folgende Ungleichung zu fordern:
+\begin{align*}
+\varepsilon \geq |\pos(b) &- \pos(a) - \delta|
+\end{align*}
+Dies liegt daran, dass bei Minimierung immer die untere Schranke angenommen wird, welche in diesem Fall die Gleichheit ist. Nun ist die Betragsfunktion aber nicht linear. Sie lässt sich aber äquivalent durch die folgenden beiden linearen Ungleichung darstellen:
+\begin{align*}
+\pos(b) - \pos(a) - \delta &\leq \varepsilon\\
+-\pos(b) + \pos(a) + \delta &\leq \varepsilon
+\end{align*}
+
+Zusammengefasst erhalten wir also folgendes lineares Programm für die Berechnung der optimalen Positionierung:
+
+\begin{align*}
+\text{Variablen:}\quad& \pos(c) \ \forall c \in C \ \ \text{und} \ \ \varepsilon_{d} \ \forall \ d \in D\\
+\text{Zielfunktion:}\quad& \sum_{d \in D} \varepsilon_{d}\\
+\text{Bedingungen:}\quad \begin{split} \pos(b) - \pos(a) - \delta \leq \varepsilon_{d}\\
+-\pos(b) + \pos(a) + \delta \leq \varepsilon_{d} \end{split}\quad \forall \ (a,b,\delta) = d \in D
+\end{align*}
+Distanzwerte weisen zu große Schwankungen auf, um auf ein Basenpaar genau zu sein. Daher bietet es sich an, die Relaxierung des LPs zu betrachten, also auch reelle Positionen zuzulassen. Durch diese Lockerung der Bedingungen lässt sich das Programm wesentlich schneller lösen.
+
+Dieses LP sorgt nur dafür, dass die Constraints möglichst gut erfüllt sind. Weder verhindert es, dass Contigs, welche keine Constraints vorweisen, nahe positioniert werden, noch erkennt es Repeats. Somit lässt es sich nur unterstützend einsetzen. Wie mit Hilfe von ILPs auch diese beiden Punkte abgedeckt werden könnten, diskutieren wir im letzten Kapitel.
+\section{Wie man eine Lösung grafisch darstellt}
+Ein wichtiger Aspekt für die Arbeit mit großen Datenmengen ist die Visualisierung.
+Sie sollte in der Lage sein, die wichtigsten Informationen auf einen Blick sichtbar zu machen. Wir beschäftigen uns nun mit Möglichkeiten, konkrete Positionierungen der Contigs, also Abbildungen $pos: C \rightarrow \mathbb{R}$, zu visualisieren.
+Eine erste, naheliegende Option ist eine lineare Darstellungsweise. Hierbei werden die einzelnen Contigs gemäß ihrer Positionierung und ihrer Länge auf der reellen Zahlengerade eingezeichnet. Um Überlappungen zu beachten, bietet es sich an, mehrschichtig zu arbeiten. Mehrschichtig bedeutet hier, dass bei Überlappung zweier Contigs der hintere Contig in einer anderen Höhe geplottet wird. Diese Methode wird durch Abbildung \ref{plotmehrschichtig} illustriert.
+Vorteile dieser Darstellungsweise sind unter anderem die folgenden Aspekte:
+\begin{enumerate}
+\item Der gesamte Strang inklusive seiner Länge ist auf einen Blick sichtbar. Dies liefert dem Betrachter einen groben Überblick. Ferner lässt sich der fünfte Unterpunkt der Anforderungen an Lösungen, die Länge des Stranges, so auch optisch leicht überprüfen.
+%\item Durch das mehrschichtige Arbeiten lassen sich Regionen mit einer hoher Überlappungsdichte (also hoher Coverage) leicht lokalisieren.
+\item Regionen, die hauptsächlich aus großen oder aus kleinen Contigs bestehen, lassen sich anhand des Plots leicht lokalisieren. Für den fünften Unterpunkt unsere Anforderungen an eine Lösung lässt sich dies als Indiz für die Sicherheit dieser Umgebungen verwenden. In Gebieten, in denen nur wenige, aber große Contigs vorkommen, sollten im Schnitt weniger Fehler hinsichtlich der geringeren Datenmenge auftreten als in mit vielen kleinen Contigs überfüllten Regionen.
+\item Durch Hinzunahme von Färbungen ist es möglich, einige Kerninformationen leicht zugänglich zu machen. Dazu zählen etwa die Anzahl der Repeats eines einzelnen Contigs oder der Gesamtanteil an sich wiederholenden Contigs.
+\end{enumerate}
+Jedoch gibt es einen zentralen Nachteil bei der Wahl dieser linearen Darstellungsform: Die Information, die wir durch die Constraints erhalten, werden in der Visualisierung nicht berücksichtigt.
+Damit lässt sich die Einhaltung der ersten drei Kriterien an eine Lösung optisch nicht analysieren.
+Beispielsweise sieht man nicht, ob benachbarte Contigs auch tatsächlich gemeinsame Constraints aufweisen.
+Um auch die Constraints mit einzubeziehen, bedarf es einer weiteren Darstellungsweise.
+
+Dazu betrachten wir zuerst nur Constraints, welche die Lösung stützen , also deren Fehler unter einer Schranke liegt. Diese sollte, nach der Überlegung aus der Formalisierung, in einer Größenordnung von 500 Basenpaare liegen.
+\section{Algorithmus Phase 1: Grobe Lösung aufbauen}
+\section{Algorithmus Phase 2: Lösung mithilfe vom LP verfeinern}
+\section{Auswertung der Ergebnisse}
+\section{Diskussion}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% ENDE TEXTTEIL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+% Entfernen Sie das Kommentar aus der nachfolgenden Zeile, falls Sie einen Anhang in der Arbeit verwenden wollen. Beachten Sie, dass Sie sich im Verlauf der Arbeit mit \ref{...} (z.B. \ref{anhang:zusatz1}) auf den Anhang beziehen.
+%\input{anhang}
+
+%\bibliography{references}
+%\bibliographystyle{alphadin}
+\DeclareNameAlias{sortname}{first-last}
+\printbibliography[heading=bibintoc, title=References]
+%\vspace*{\fill}
+
+\clearpage
+
+\listoffigures
+
+\listoftables
+
+%\pagebreak
+
+%\printindex
+\end{document}
