@@ -162,9 +162,9 @@ Dabei wird folgende Notation verwendet:
 Lineare Programme lassen sich in Polynomialzeit berechnen. Daher eignen sie sich oft als Werkzeug für verschiedenste Probleme. Es ist auch möglich, den Definitionsraum der Variablen (teilweise) auf ganze Zahlen zu beschränken. Dies bezeichnet man dann als ein ganzahliges lineares Programm (kurz ILP). ILPs bieten einige Möglichkeiten die mit LPs nicht umzusetzen wären. Sie sind dafür aber NP-schwer und somit wahrscheinlich nicht polynomialzeitberechenbar.
 
 \subsection{Assembly als LP}
-Im Folgenden bezeichnet $C$ die Menge aller Contigs und $D$ die Multimenge aller Constraints.
+Im Folgenden bezeichnet $C$ die Menge aller Contigs und $D$ die Multimenge aller Constraints. Dabei wurde der Distanzwert jedes Constraints in $D$ so umgerechnet, dass er die Entfernung von linken Rand vom ersten Contig bis zum linken Rand des zweiten Contigs angibt.
 Wir möchten die Contigs so positionieren, dass der durchschnittliche Fehler aller Constraints möglich klein ist. Als Formel:
-\[ \pos = \argmin_{\pos\,:\, C \rightarrow \mathbb{N}} \ \sum_{(a,b,\delta) \in D} |\pos(b) - \pos(a) - \delta| \]
+\[ \pos = \argmin_{\pos\,:\, C \rightarrow \mathbb{N}} \ \sum_{(a,b,\delta) \in D} |\pos(b) - \pos(a) - \delta| \] 
 Um daraus ein lineares Programm zu machen, führen wir für jeden Constraint $(a,b,\delta)$ aus $D$ eine Hilfsvariable $\varepsilon$ ein:
 \[ \varepsilon = |\pos(b) - \pos(a) - \delta| \]
 Mit Hilfe dieser Variablen können wir die zu minimierende Zielfunktion wie folgt darstellen:
@@ -191,7 +191,15 @@ Zusammengefasst erhalten wir also folgendes lineares Programm für die Berechnun
 \end{align*}
 Distanzwerte weisen zu große Schwankungen auf, um auf ein Basenpaar genau zu sein. Daher bietet es sich an, die Relaxierung des LPs zu betrachten, also auch reelle Positionen zuzulassen. Durch diese Lockerung der Bedingungen lässt sich das Programm wesentlich schneller lösen.
 
-Dieses LP sorgt nur dafür, dass die Constraints möglichst gut erfüllt sind. Weder verhindert es, dass Contigs, welche keine Constraints vorweisen, nahe positioniert werden, noch erkennt es Repeats. Somit lässt es sich nur unterstützend einsetzen. Wie mit Hilfe von ILPs auch diese beiden Punkte abgedeckt werden könnten, diskutieren wir im letzten Kapitel.
+Dieses LP sorgt nur dafür, dass die Constraints möglichst gut erfüllt sind. Weder verhindert es, dass Contigs, welche keine Constraints vorweisen, nahe positioniert werden, noch erkennt es Repeats. Um das weitere Vorgehen planen zu können, bietet es sich trotzdem an, diesen Ansatz auszuführen und anhand der Lösung konkrete Problemstellen zu lokalisieren. 
+
+
+Die Implementierung erfolgt in der Jupyter-Umgebung der Programmiersprache Python. Dabei wird Gurobi, einem Programm das auf mathematische Optimierung spezialisiert ist, verwendet. Das Programm liefert uns als Rückgabe eine konkrete Positionierung der Contigs. Nun wäre es gut, wenn wir eine Möglichkeit hätten, festzustellen, inwiefern die von uns festgelegten Kriterien erfüllt sind. Im nächsten Kapitel werden dazu verschiedene optische Verfahren diskutiert
+
+%Somit lässt es sich nur unterstützend einsetzen. Wie mit Hilfe von ILPs auch diese beiden Punkte abgedeckt werden könnten, diskutieren wir im letzten Kapitel.
+
+
+
 \section{Wie man eine Lösung grafisch darstellt}
 Ein wichtiger Aspekt für die Arbeit mit großen Datenmengen ist die Visualisierung.
 Sie sollte in der Lage sein, die wichtigsten Informationen auf einen Blick sichtbar zu machen. Wir beschäftigen uns nun mit Möglichkeiten, konkrete Positionierungen der Contigs, also Abbildungen $pos: C \rightarrow \mathbb{R}$, zu visualisieren.
@@ -208,33 +216,133 @@ Damit lässt sich die Einhaltung der ersten drei Kriterien an eine Lösung optis
 Beispielsweise sieht man nicht, ob benachbarte Contigs auch tatsächlich gemeinsame Constraints aufweisen.
 Um auch die Constraints mit einzubeziehen, bedarf es einer weiteren Darstellungsweise.
 
-Dazu betrachten wir zuerst nur Constraints, welche die Lösung stützen , also deren Fehler unter einer Schranke liegt. Diese sollte, nach der Überlegung aus der Formalisierung, in einer Größenordnung von 500 Basenpaare liegen.
+Um auch die Constraints mit einzubeziehen, bedarf es einer weiteren Darstellungsweise.
+Ähnlich wie in Abbildungen \ref{abb1} und \ref{abb3} lassen sich dafür gerichtete Graphen verwenden. Dabei bildet die Menge der Contigs die Knoten des Graphen. Constraints zwischen zwei Knoten lassen sich als (gerichtete) Kanten darstellen.
+Um eine gewisse Übersichtlichkeit zu erhalten, ist es aber sinnvoll, nicht alle Constraints zu plotten.
+Stattdessen nutzen wir die gegebene Positionierung aus und zeichnen nur Kanten für nah beieinander positionierte Contigs mit gemeinsamen Constraints.
+Dabei gehen wir für jeden auftretenden Contig $a$ wie folgt vor:
+\begin{itemize}
+\item Zunächst werden alle Constraints gelöscht, deren Fehler in der vorgegebenen Positionierung größer als eine fixierte Konstante ist. Oftmals fällt die Wahl hier auf eine Zahl in der Größenordnung $500$ gemäß der Überlegungen bezüglich der Standardabweichungen in dem Kapitel der Formalisierung.
+\item Ferner werden mehrfach auftretende Constraints zusammengefasst und alle Schleifen, also alle Constraints der Form $(a, a, d)$ gelöscht.
+\item Sei nun $N_a$ die Menge aller Contigs, die zusammen mit $a$ in einem verbliebenden Constraints enthalten sind. Nun werden die Contigs in $N_a$ und $a$ selbst bezüglich ihrer Positionierung sortiert.
+\item Schließlich wird je eine Kante von $a$ zu den ersten beiden Contigs, die hinter $a$ positioniert wurden, gezeichnet. Umgekehrt wird je eine Kante von den ersten beiden Contigs, die vor $a$ positioniert wurden, zu $a$ gezeichnet.
+\end{itemize}
+Im Allgemeinen tritt hierbei auch der Fall auf, dass eine Kante $(a,b)$ während des Prozesses doppelt eingezeichnet werden soll: Einmal im Durchgang von $a$ als auslaufende Kante und einmal im Durchgang von $b$ als einlaufende Kante.
+Sie werden trotzdem nur einmal gezeichnet.
+
+Die Wahl, dass jeder Knoten zwei Vorgänger und zwei Nachfolger bekommt, ist nicht fest, hat sich aber als besonders geeignet herausgestellt. Bei nur einem Vorgänger und einem Nachfolger kann es schnell passieren, dass ein eigentlich zusammenhängender Strang unzusammenhängend dargestellt wird. Abbildungen \ref{t} und \ref{tt} illustrieren diese Situation. Dabei entspricht die erste Abbildung der tatsächlich im Programm auftretenden Darstellungsform. In der zweiten Abbildung wurde die Situation noch einmal etwas schematischer skizziert und optisch mit Farben unterlegt. 
+Auch können mehrere Kanten interessante Einblicke über die Struktur geben. So gibt es Contigs die nur eine einlaufende Kante besitzen, oder deren Kanten mehrere Contigs überspringen. Alles ein Zeichen von Unstimmigkeiten, die näher untersucht werden könnten.
+
+
+
+%\begin{minipage}{0.5\textwidth}
+%\begin{figure}
+%	\begin{center}
+%		\includegraphics[width=0.9\textwidth]{bilder/t}
+%	\end{center}
+%	\caption{t}
+%	\label{t}
+%\end{figure}
+%\end{minipage}
+
+%\begin{minipage}{0.5\textwidth}
+%\begin{figure}
+%	\begin{center}
+%		\includegraphics[width=0.9\textwidth]{bilder/tt}
+%	\end{center}
+%	\caption{tt}
+%	\label{tt}
+%\end{figure}
+%\end{minipage}
 \section{Algorithmus Phase 1: Grobe Lösung aufbauen}
+Wenn Gurken hinter Gurken gurken, gurken Gurken Gurken nach.\\
+Hier fehlt Bild + Analyse + tolle Einleitung + Überleitung.
+
+Wir benötigen ein Grundgerust, [...]
+
+Dafür speichern wir die Constraints als einen gerichteten Multigraphen aus der NetworkX Bibliothek \ref{}, also für jeden Constraint $(a,b,d)$ eine Kante von $a$ nach $b$ der Länge $d$.
+
+Für Zeitintensivere Berechnungen, erstellen wir eine reduzierte Version, in der ähnliche Kanten zusammengefasst werden zu einer Kante. Dabei werden für je zwei Contigs alle Distanzwerte zwischen diesen beiden Contigs sortiert (wobei für eine Richtung die Distanzwerte als negativ betrachtet werden). Dann werden die Distanzwerte aufgeteilt, sobald sie sich mehr als 500 Basenpaare zum nächsten Wert unterscheiden. Die so gruppierten Werte werden durch ihr Median ersetzt und mit der Gruppengröße Gewichtet. 
+
+Gehen wir dies an einen kleinen Beispiel durch. Gegeben sind folgende Constraints zwischen zwei Contigs $a$ und $b$:
+\begin{center}
+\begin{tabular}{lr}
+$a$\quad $b$\quad &100\\
+$a$\quad $b$\quad &11\,000\\
+$b$\quad $a$\quad &50\\
+$b$\quad $a$\quad &60\,000\\
+$a$\quad $b$\quad &70\\
+$a$\quad $b$\quad &300\\
+$a$\quad $b$\quad &10\,950\\
+$a$\quad $b$\quad &11\,050\\
+$a$\quad $b$\quad &20\\
+$a$\quad $b$\quad &600\\
+$b$\quad $a$\quad &200
+\end{tabular}
+\end{center}
+Die sortierten Distanzwerte:
+\[-60000\ \ \,{-200}\ \ \,{-50}\ \ \,20\ \ \,70\ \ \,100\ \ \,300\ \ \,600\ \ \,10950\ \ \,11000\ \ \,11050\]
+Gruppen bilden bei Abständen über 500:
+\[-60000\,|\, {-200}\ \ \,{-50}\ \ \,20\ \ \,70\ \ \,100\ \ \,300\ \ \,600\, |\, 10950\ \ \,11000\ \ \,11050\]
+Es resultieren diese drei Kanten im reduzierten Graphen:
+
+\begin{center}
+\includegraphics[width=0.4\textwidth]{bilder/dreikannten}
+\end{center}
+
+
+Unser Ziel ist es, ein Pfad durch den den Graphen zu finden vom ersten bis zum letzten Contig, der möglichst viele Contigs beinhaltet.
+Dafür werden wir beim ersten Contig anfangen und uns Schrittweise vorarbeiten. Sollte sich der Graph aufteilen, so versuchen wir zuerst mithilfe von Heuristiken zu bestimmen, welcher Pfad der richtige ist. Sollte dies nicht möglich sein, werden alle Pfade ausprobiert.
+
+Wir beginnen mit Contig 2345APD an Position 0. Für jede auslaufende Kante $e$ aus 2345APD wird zu dem Endknoten von $e$ die Länge der Kante in einer Liste gespeichert. Die ersten Listen der ersten 10 Contigs sehen so aus:
+\begin{footnotesize}
+\begin{align*}
+\text{1483APD}&: 6632\ \ \,6662\ \ \,6662\\
+\text{1395APD}&: 6877\ \ \,6943\ \ \,6977\ \ \,6979\ \ \,6980\ \ \,6982\ \ \,6985\ \ \,6993\ \ \,6998\ \ \,6999\ \ \,7002\\
+\text{1596APD}&: 9809\ \ \,9867\ \ \,9903\ \ \,9931\ \ \,9939\ \ \,9942\ \ \,9951\ \ \,9978\\
+\text{2235APD}&: 14013\ \ \,14070\ \ \,14179\ \ \,14219\ \ \,14263\ \ \,14290\ \ \,14304\\
+\text{1534APD}&: 14687\ \ \,14732\ \ \,14841\ \ \,14930\ \ \,14957\ \ \,14972\\
+\text{546APD}&: 16242\ \ \,16254\ \ \,16372\ \ \,16470\ \ \,16550\\
+\text{577APD}&: 18659\ \ \,18782\ \ \,18967\ \ \,19040\ \ \,19081\\
+\text{998APD}&: 32244\ \ \,32453\\
+\text{209APD}&: 34061\ \ \,34257\\
+\text{1635APD}&: 43666
+\end{align*}
+\end{footnotesize}
+Es folgen noch 101 weitere Contigs mit jeweils nur einen Eintrag. Diese Werte werden genau wie beim reduzierten Graphen gruppiert und der Contig mit der kleinsten Position wird als nächstes gesetzt. 
+
+Dies ist in diesem Fall Contig 1483APD an Position 6662. Auch von 1483APD werden die Distanzwerte der auslaufenden Kannten genommen. Diese werden aber zuerst zu seiner Position addiert und dann zu den schon bestehenden Werten von 2345APD hinzugefügt:
+
+\begin{footnotesize}
+\begin{align*}
+\text{1395APD:}&\ 6877\ \ \,6943\ \ \,6977\ \ \,6979\ \ \,6980\ \ \,6982\ \ \,6985\ \ \,6993\ \ \,6998\ \ \,6999\ \ \,7002\quad\quad 6982\ \ \, 6989\ \ \,6994\\
+\text{1596APD:}&\ 9809\ \ \,9867\ \ \,9903\ \ \,9931\ \ \,9939\ \ \,9942\ \ \,9951\ \ \,9978\quad\quad 9906\ \ \,9946\\
+\text{2235APD:}&\ 14013\ \ \,14070\ \ \,14179\ \ \,14219\ \ \,14263\ \ \,14290\ \ \,14304\quad\quad 14109\ \ \,14308\\
+\text{1534APD:}&\ 14687\ \ \,14732\ \ \,14841\ \ \,14930\ \ \,14957\ \ \,14972\quad\quad 14771\ \ \,14976\\
+\text{546APD:}&\ 16242\ \ \,16254\ \ \,16372\ \ \,16470\ \ \,16550\quad\quad 16293\ \ \,16554\\
+\text{577APD:}&\ 18659\ \ \,18782\ \ \,18967\ \ \,19040\ \ \,19081\quad\quad 18698\ \ \,19044\\
+\text{998APD:}&\ 32244\ \ \,32453\quad\quad 32248\\
+\text{209APD:}&\ 34061\ \ \,34257\quad\quad 34065\\
+\text{1635APD:}&\ 43666
+\end{align*}
+\end{footnotesize}
 \section{Algorithmus Phase 2: Lösung mithilfe vom LP verfeinern}
 \section{Auswertung der Ergebnisse}
 \section{Diskussion}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% ENDE TEXTTEIL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \clearpage
-
 % Entfernen Sie das Kommentar aus der nachfolgenden Zeile, falls Sie einen Anhang in der Arbeit verwenden wollen. Beachten Sie, dass Sie sich im Verlauf der Arbeit mit \ref{...} (z.B. \ref{anhang:zusatz1}) auf den Anhang beziehen.
 %\input{anhang}
-
 %\bibliography{references}
 %\bibliographystyle{alphadin}
 \DeclareNameAlias{sortname}{first-last}
 \printbibliography[heading=bibintoc, title=References]
 %\vspace*{\fill}
-
 \clearpage
-
 \listoffigures
-
 \listoftables
-
 %\pagebreak
-
 %\printindex
 \end{document}
