@@ -90,15 +90,21 @@ Letztere besitzt folgenden dreispaltigen Aufbau:
 &b \quad c \quad 3000\\
 &a \quad c \quad 6000
 \end{align*}
-Dabei entspricht jede Zeile einem Constraint. Die ersten beiden Zeilen geben jeweils die beiden involvierten Contigs an. In der dritten Spalte sind die gemessenen Distanzen angegeben. Diese sind als Entfernung vom rechten Rand des ersten Contigs zum linken Rand des zweiten Contigs in Basenpaaren zu interpretieren. Negative Distanzen sind auf Überlagerungen einzelner Contigs zurückzuführen. Zusätzlich zu den Constraints aus den Long-Reads stammen etwa 2\% der Constraints direkt aus der Illumina Sequenzierung. Hier wurde mehrmals die Distanz zwischen benachbarte Contigs gemessen und der Durchschnitt daraus berechnet. Dadurch können auch nicht ganzzahlige Werte als Distanzen auftreten.
 
+
+Dabei entspricht jede Zeile einem Constraint. Die ersten beiden Zeilen geben jeweils die beiden involvierten Contigs an. In der dritten Spalte sind die gemessenen Distanzen angegeben. Diese sind als Entfernung vom rechten Rand des ersten Contigs zum linken Rand des zweiten Contigs in Basenpaaren zu interpretieren. Negative Distanzen sind auf Überlagerungen einzelner Contigs zurückzuführen. Durch Hinzunahme der Längen der Contigs lassen sich die Distanzen auch so modifizieren, dass sie den Abstand der ersten Basenpaare der jeweiligen Contigs angeben. Im Folgendem werden wir nur noch die so modifizierten Distanzwerte verwenden. Zusätzlich zu den Constraints aus den Long-Reads stammen etwa 2\% der Constraints direkt aus der Illumina Sequenzierung. Hier wurde mehrmals die Distanz zwischen benachbarte Contigs gemessen und der Durchschnitt daraus berechnet. Dadurch können auch nicht ganzzahlige Werte als Distanzen auftreten.
+
+Wir werden im folgenden oft eine graphentheoretische Darstellung der Daten verwenden. Dabei sind die Contigs Knoten in einem Multigraphen und ein Constraint $(a,b,d)$ eine gerichtete Kante von $a$ nach $b$ mit Länge $d$ als Attribut. Dabei werden die Begriffe Contig und Knoten sowie Constraint und Kante synonym verwendet: „Nachfolger eines Contigs“, „ausgehender Constraint“.
+
+Zu einer gegebenen Positionierung ist der Fehler eines Constraints gegeben durch den Unterschied von der Distanz in der Positionierung zu der Distanz im Constraint. Wenn also Contig $a$ 300 Basenpaare vor Contig $b$ positioniert wurde, dann haben die beiden Constraints $(a,b,200)$ und $(a,b,400)$ beide einen Fehler von 100.
+Ein Constraint ist durch eine Positionierung erfüllt, bzw eine Positionierung von einem Constraint bestätigt, wenn der Fehler des Constraints kleiner als ein Schwellenwert ist, der im Laufe des folgeden Abschnittes festgelegt wird.
 \subsection{Anforderungen an die Lösung}
 Nun wollen wir einige Gütekriterien für mögliche Lösungen festlegen, um während der Bearbeitung Orientierungspunkte für die weitere Optimierung des Algorithmus zu haben und um diesen nach Abschluss anhand dieser Kriterien zu bewerten.
 Folgende Punkte sollen beachtet werden:
 \begin{enumerate}
-\item Wenn mehrere Constraints eine ähnliche Distanz zwischen zwei Contigs sehen, sollten diese Contigs auch die Distanz möglichst gut erfüllen. Der Schwellwert hierbei liegt bei zwei Constraints.
+\item Wenn mehr als ein Constraint eine ähnliche Distanz zwischen zwei Contigs sieht, sollten die Lösung diese Distanz möglichst gut erfüllen.
 \item Ein Großteil der restlichen Constraints sollte auch zu der Positionierung passen.
-\item Es sollten möglichst wenig Contigs nahe zueinander positioniert werden, die keine gemeinsamen Constraints aufweisen. Diese Situation wird durch Abbildung \ref{gespallten} illustriert. In der Abbildung werden die Constraints durch gerichtete Kanten zwischen den Contigs dargestellt. Der oberer Teilabschnitt zeigt eine Lösung, bei der die Bedingung nicht erfüllt wurde. Realistischer ist jedoch, dass hierbei ein Teilblock bestehend aus Contig 12 und Contig 32 doppelt in dem DNA-Strang vorkommt und bei der Lösung des Problems zwei separate Stränge ineinander verflochten wurden. Dies ist in der unteren Bildhälfte dargestellt.
+\item Es sollten möglichst wenig Contigs nahe zueinander positioniert werden, die keine gemeinsamen Constraints aufweisen. Diese Situation wird durch Abbildung \ref{gespallten} illustriert. Der obere Teilabschnitt zeigt eine Lösung, bei der die Bedingung nicht erfüllt wurde. Realistischer ist jedoch, dass hierbei ein Teilblock bestehend aus Contig 12 und Contig 32 doppelt in dem DNA-Strang vorkommt und bei der Lösung des Problems zwei separate Stränge ineinander verflochten wurden. Dies ist in der unteren Bildhälfte dargestellt.
 
 \begin{figure}
 	\begin{center}
@@ -219,21 +225,25 @@ Um auch die Constraints mit einzubeziehen, bedarf es einer weiteren Darstellungs
 Um auch die Constraints mit einzubeziehen, bedarf es einer weiteren Darstellungsweise.
 Ähnlich wie in Abbildungen \ref{abb1} und \ref{abb3} lassen sich dafür gerichtete Graphen verwenden. Dabei bildet die Menge der Contigs die Knoten des Graphen. Constraints zwischen zwei Knoten lassen sich als (gerichtete) Kanten darstellen.
 Um eine gewisse Übersichtlichkeit zu erhalten, ist es aber sinnvoll, nicht alle Constraints zu plotten.
-Stattdessen nutzen wir die gegebene Positionierung aus und zeichnen nur Kanten für nah beieinander positionierte Contigs mit gemeinsamen Constraints.
+Stattdessen nutzen wir die gegebene Positionierung aus und zeichnen nur Kanten für nah beieinander positionierte Contigs mit gemeinsamen Constraints.% und Kanten welche besonders lang sind.
 Dabei gehen wir für jeden auftretenden Contig $a$ wie folgt vor:
 \begin{itemize}
 \item Zunächst werden alle Constraints gelöscht, deren Fehler in der vorgegebenen Positionierung größer als eine fixierte Konstante ist. Oftmals fällt die Wahl hier auf eine Zahl in der Größenordnung $500$ gemäß der Überlegungen bezüglich der Standardabweichungen in dem Kapitel der Formalisierung.
 \item Ferner werden mehrfach auftretende Constraints zusammengefasst und alle Schleifen, also alle Constraints der Form $(a, a, d)$ gelöscht.
 \item Sei nun $N_a$ die Menge aller Contigs, die zusammen mit $a$ in einem verbliebenden Constraints enthalten sind. Nun werden die Contigs in $N_a$ und $a$ selbst bezüglich ihrer Positionierung sortiert.
 \item Schließlich wird je eine Kante von $a$ zu den ersten beiden Contigs, die hinter $a$ positioniert wurden, gezeichnet. Umgekehrt wird je eine Kante von den ersten beiden Contigs, die vor $a$ positioniert wurden, zu $a$ gezeichnet.
+%\item Schließlich wird noch eine grün gefärbte Kante von $a$ nach $b$ gezeichnet, wenn es ein Constraint von $a$ nach $b$ aber weder ein Constraint von $a$ nach $c$ und von $b$ nach $c$ gibt, noch ein Constraint von $c$ nach $a$ und von $c$ nach $b$. 
+\item Zusätzlich werden noch grün gefärbte Kanten gezeichnet für alle Constraints, die nicht verlängerbar sind. Als verlängerbar gelten alle Constraints von $a$ nach $b$ und von $b$ nach $c$ für die es ein Constraint von $a$ nach $c$ gibt.
 \end{itemize}
 Im Allgemeinen tritt hierbei auch der Fall auf, dass eine Kante $(a,b)$ während des Prozesses doppelt eingezeichnet werden soll: Einmal im Durchgang von $a$ als auslaufende Kante und einmal im Durchgang von $b$ als einlaufende Kante.
 Sie werden trotzdem nur einmal gezeichnet.
 
-Die Wahl, dass jeder Knoten zwei Vorgänger und zwei Nachfolger bekommt, ist nicht fest, hat sich aber als besonders geeignet herausgestellt. Bei nur einem Vorgänger und einem Nachfolger kann es schnell passieren, dass ein eigentlich zusammenhängender Strang unzusammenhängend dargestellt wird. Abbildungen \ref{t} und \ref{tt} illustrieren diese Situation. Dabei entspricht die erste Abbildung der tatsächlich im Programm auftretenden Darstellungsform. In der zweiten Abbildung wurde die Situation noch einmal etwas schematischer skizziert und optisch mit Farben unterlegt. 
+Die Wahl, dass jeder Knoten zwei Vorgänger und zwei Nachfolger bekommt, ist nicht fest, hat sich aber als besonders geeignet herausgestellt. Bei nur einem Vorgänger und einem Nachfolger kann es schnell passieren, dass ein eigentlich zusammenhängender Strang unzusammenhängend dargestellt wird. Abbildungen \ref{t} und \ref{tt} illustrieren diese Situation. Dabei entspricht die erste Abbildung der tatsächlich im Programm auftretenden Darstellungsform. In der zweiten Abbildung wurde die Situation noch einmal etwas schematischer skizziert und optisch mit Farben unterlegt.
+
 Auch können mehrere Kanten interessante Einblicke über die Struktur geben. So gibt es Contigs die nur eine einlaufende Kante besitzen, oder deren Kanten mehrere Contigs überspringen. Alles ein Zeichen von Unstimmigkeiten, die näher untersucht werden könnten.
 
-
+%Die grünen Kanten geben einen guten Überblick, wie weitläufig die Constraints in dem Bereich vernetzt sind. Lange grüne Kanten die sich weitläufig überschneiden zeugen von einem Sicheren Gebiet, wärend wenige kurze grüne Kanten sehr unsicher sind.
+%TODO 
 
 %\begin{minipage}{0.5\textwidth}
 %\begin{figure}
@@ -255,14 +265,20 @@ Auch können mehrere Kanten interessante Einblicke über die Struktur geben. So 
 %\end{figure}
 %\end{minipage}
 \section{Algorithmus Phase 1: Grobe Lösung aufbauen}
-Wenn Gurken hinter Gurken gurken, gurken Gurken Gurken nach.\\
-Hier fehlt Bild + Analyse + tolle Einleitung + Überleitung.
 
-Wir benötigen ein Grundgerust, [...]
+Am Ende des vorherigen Abschnittes haben wir festgestellt, dass eine einfache Ausführung des lineare Programmes nicht ausreicht, um eine Lösung zu konstruieren, die unsere Gütekriterien erfüllt. 
+In dem Graphen, der zu der Lösung korrespondiert, erkennt man dies anhand der starken Verflechtung/Verknotung verschiedener Teilstränge
+Um dies möglichst zu verhindern, gehen wir nun wie folgt vor:
 
-Dafür speichern wir die Constraints als einen gerichteten Multigraphen aus der NetworkX Bibliothek \ref{}, also für jeden Constraint $(a,b,d)$ eine Kante von $a$ nach $b$ der Länge $d$.
+Unser Ziel ist es, ein "Grundgerüst" für eine fertige Lösung aufzubauen.
+Dieses soll die Form eines Pfades von dem ersten bis zum letzten Contig des Stranges besitzen.
+Dabei sollte der Pfad möglichst viele Contigs enthalten, welche zueinander richtig positioniert sind.
+Ist ist nicht notwendig, dass alle Contigs korrekt positioniert sind, da das lineare Programme vereinzelte Fehlpositionierungen der Contigs gut beheben kann. 
 
-Für Zeitintensivere Berechnungen, erstellen wir eine reduzierte Version, in der ähnliche Kanten zusammengefasst werden zu einer Kante. Dabei werden für je zwei Contigs alle Distanzwerte zwischen diesen beiden Contigs sortiert (wobei für eine Richtung die Distanzwerte als negativ betrachtet werden). Dann werden die Distanzwerte aufgeteilt, sobald sie sich mehr als 500 Basenpaare zum nächsten Wert unterscheiden. Die so gruppierten Werte werden durch ihr Median ersetzt und mit der Gruppengröße Gewichtet. 
+
+Wir speichern die Constraints als einen gerichteten Multigraphen $G$ aus der NetworkX Bibliothek \ref{}.
+
+Für zeitintensivere Berechnungen, erstellen wir eine reduzierte Version $G_r$, in der ähnliche Kanten zusammengefasst werden zu einer Kante. Dabei werden für je zwei Contigs alle Distanzwerte zwischen diesen beiden Contigs sortiert (wobei für eine Richtung die Distanzwerte als negativ betrachtet werden). Dann werden die Distanzwerte aufgeteilt, sobald sie sich mehr als 500 Basenpaare zum nächsten Wert unterscheiden. Die so gruppierten Werte werden durch ihr Median ersetzt und mit der Gruppengröße gewichtet. 
 
 Gehen wir dies an einen kleinen Beispiel durch. Gegeben sind folgende Constraints zwischen zwei Contigs $a$ und $b$:
 \begin{center}
@@ -284,32 +300,35 @@ Die sortierten Distanzwerte:
 \[-60000\ \ \,{-200}\ \ \,{-50}\ \ \,20\ \ \,70\ \ \,100\ \ \,300\ \ \,600\ \ \,10950\ \ \,11000\ \ \,11050\]
 Gruppen bilden bei Abständen über 500:
 \[-60000\,|\, {-200}\ \ \,{-50}\ \ \,20\ \ \,70\ \ \,100\ \ \,300\ \ \,600\, |\, 10950\ \ \,11000\ \ \,11050\]
-Es resultieren diese drei Kanten im reduzierten Graphen:
+Es resultieren diese drei Kanten in $G_r$:
 
 \begin{center}
 \includegraphics[width=0.4\textwidth]{bilder/dreikannten}
 \end{center}
 
 
-Unser Ziel ist es, ein Pfad durch den den Graphen zu finden vom ersten bis zum letzten Contig, der möglichst viele Contigs beinhaltet.
+Unser Ziel ist es, ein Pfad durch $G$ zu finden vom ersten bis zum letzten Contig, der möglichst viele Contigs beinhaltet.
 Dafür werden wir beim ersten Contig anfangen und uns Schrittweise vorarbeiten. Sollte sich der Graph aufteilen, so versuchen wir zuerst mithilfe von Heuristiken zu bestimmen, welcher Pfad der richtige ist. Sollte dies nicht möglich sein, werden alle Pfade ausprobiert.
 
 Wir beginnen mit Contig 2345APD an Position 0. Für jede auslaufende Kante $e$ aus 2345APD wird zu dem Endknoten von $e$ die Länge der Kante in einer Liste gespeichert. Die ersten Listen der ersten 10 Contigs sehen so aus:
 \begin{footnotesize}
 \begin{align*}
-\text{1483APD}&: 6632\ \ \,6662\ \ \,6662\\
-\text{1395APD}&: 6877\ \ \,6943\ \ \,6977\ \ \,6979\ \ \,6980\ \ \,6982\ \ \,6985\ \ \,6993\ \ \,6998\ \ \,6999\ \ \,7002\\
-\text{1596APD}&: 9809\ \ \,9867\ \ \,9903\ \ \,9931\ \ \,9939\ \ \,9942\ \ \,9951\ \ \,9978\\
-\text{2235APD}&: 14013\ \ \,14070\ \ \,14179\ \ \,14219\ \ \,14263\ \ \,14290\ \ \,14304\\
-\text{1534APD}&: 14687\ \ \,14732\ \ \,14841\ \ \,14930\ \ \,14957\ \ \,14972\\
-\text{546APD}&: 16242\ \ \,16254\ \ \,16372\ \ \,16470\ \ \,16550\\
-\text{577APD}&: 18659\ \ \,18782\ \ \,18967\ \ \,19040\ \ \,19081\\
-\text{998APD}&: 32244\ \ \,32453\\
-\text{209APD}&: 34061\ \ \,34257\\
-\text{1635APD}&: 43666
+\text{1483APD:}& 6632\ \ \,6662\ \ \,6662\\
+\text{1395APD:}& 6877\ \ \,6943\ \ \,6977\ \ \,6979\ \ \,6980\ \ \,6982\ \ \,6985\ \ \,6993\ \ \,6998\ \ \,6999\ \ \,7002\\
+\text{1596APD:}& 9809\ \ \,9867\ \ \,9903\ \ \,9931\ \ \,9939\ \ \,9942\ \ \,9951\ \ \,9978\\
+\text{2235APD:}& 14013\ \ \,14070\ \ \,14179\ \ \,14219\ \ \,14263\ \ \,14290\ \ \,14304\\
+\text{1534APD:}& 14687\ \ \,14732\ \ \,14841\ \ \,14930\ \ \,14957\ \ \,14972\\
+\text{546APD:}& 16242\ \ \,16254\ \ \,16372\ \ \,16470\ \ \,16550\\
+\text{577APD:}& 18659\ \ \,18782\ \ \,18967\ \ \,19040\ \ \,19081\\
+\text{998APD:}& 32244\ \ \,32453\\
+\text{209APD:}& 34061\ \ \,34257\\
+\text{1635APD:}& 43666
 \end{align*}
 \end{footnotesize}
-Es folgen noch 101 weitere Contigs mit jeweils nur einen Eintrag. Diese Werte werden genau wie beim reduzierten Graphen gruppiert und der Contig mit der kleinsten Position wird als nächstes gesetzt. 
+Es folgen noch 101 weitere Contigs mit jeweils nur einen Eintrag. Diese Werte werden genau wie bei der Erstellung des reduzierten Graphen gruppiert und Position der größten Gruppe den Contigs vorläufig zugeordnet. 
+
+Die Positionierung des Contigs mit der niedrigsten vorläufigen Position wird fest gesetzt.
+%der Contig mit der niedrigsten Position wird als nächstes gesetzt. 
 
 Dies ist in diesem Fall Contig 1483APD an Position 6662. Auch von 1483APD werden die Distanzwerte der auslaufenden Kannten genommen. Diese werden aber zuerst zu seiner Position addiert und dann zu den schon bestehenden Werten von 2345APD hinzugefügt:
 
@@ -326,6 +345,66 @@ Dies ist in diesem Fall Contig 1483APD an Position 6662. Auch von 1483APD werden
 \text{1635APD:}&\ 43666
 \end{align*}
 \end{footnotesize}
+
+So wird der Strang Contig für Contig aufgebaut. Wir sammeln die bereits fest Positionierten Contigs in einer Menge $P$ und die vorläufig positionierten Contigs in einer Menge $P_V$.% Der einfachheitshalber führen wir folgende Notation ein: Sei $c \in P$, dann ist $P[c]$ die Position des Contigs $c$, analog für $c \in P_V$. 
+Den zuletzt in $P$ hinzugefügten Contig bezeichnen wir mit $a^*$.
+Sollte ein Nachfolger von $a^*$ bereits in $P$ sein, so wird dieser nur erneut aufgenommen, wenn die neue Position mehr als 20\,000 Basenpaare von der alten entfernt ist und die zugehörige Kante im reduzierten Graphen mindestens ein Gewicht von drei aufweist. Weiterhin darf $a^*$ nicht selbst ein Repeat sein. Damit werden Endlosschleifen vermieden. 
+
+Doch wie wird erkannt, dass der Pfad sich aufspaltet? Dafür wird $P_V$ näher untersucht. Es wird ein Teilgraph $H$ von $G_r$ aus den vorläufig positionierten Contigs genommen. Es werden nur Kanten übernommen, deren Fehler kleiner sind als 500. Sobald es in $H$ mehr als ein Contig keine einlaufenden Kanten besitzt, wird genauer untersucht, mit welchem dieser Contigs weitergearbeitet wird.
+
+Sei $S_0$ die Menge der Contigs ohne einlaufenden Kanten. Sollte es zu einem Contig $s$ aus $S_0$ keine zur Vorpositionierung passende Kante von dem aktuell positionierten Contig aus geben, wird $s$ aus $S_0$ entfernt. Damit wird sichergestellt, dass die Lösung ein Pfad darstellt.
+
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{bilder/msplit3}
+	\end{center}
+	\label{msplit}
+	\caption{}
+\end{figure}
+
+Als erstes behandeln wir Fälle, wie den in Abbilung \ref{msplit} dargestellten Fall. Der abgebildete Graph ist aus der im letzten Kapitel erläuterten Methode entstanden. Die roten Knoten sind die Contigs aus $P_V$, die schwarzen Knoten sind die Contigs $P$, welche Constraints nach $P_V$ aufweisen. Die Knoten wurden nach ihrer Position durchnummeriert und so benannt. Die Zahl an den Kanten gibt die Anzahl an Constraints an, welche die Kante unterstützen.
+%Grüne Kanten sind Kanten, bei denen sowohl Anfangsknoten wie auch  Endknoten keine Constraints zu weiter entfernten Constraints aufweisen
+
+$S_0$ besteht aus den beiden Contigs 7 und 8. Für ein Grundgerüst der DNA ist es egal, mit welchem der beiden Contigs weitergearbeitet wird. Daher werden in einem Fall, bei denen von zwei Contigs aus $S_0$ die gleichen Contigs erreicht werden können, immer der Contig aus $S_0$ entfernt, welcher mit den meisten fest positionierten Contigs erfüllte Constraints aufweist. In diesem Fall wäre es Contig 7, da Contig 8 nur eine einlaufende Kante von 6 aus hat, wohingegen Contig 7 mindestens zwei Einlaufende Kanten hat (wahrscheinlich hat 7 aber auch von den restlichen vorherigen Contigs einlaufende Kanten).
+
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{bilder/bigsplit}
+	\end{center}
+	\label{bigsplit}
+	\caption{}
+\end{figure}
+Nun nehmen wir uns die restlichen Fälle vor, bei denen eine falsche Entscheidung gravierende Auswirkungen haben können. Ein Standardbeispiel ist in Abbildung \ref{bigsplit} dargestellt. Die Menge aus Contig 7, 10 und 11, haben ausschließlich eine Kante zu Contig 6, wärend 8,9 und 12 zu sämtlichen vorhergehnden Contigs Kanten haben (Die sind zwar nicht alle eingezeichnet, aber es werden nur Contigs aus $P$ dargestellt, die eine Kante in $V$ haben und da Contig 6 der eizige Contig mit eine grünen Kante in die Menge 8,9 und 12 ist, können die Contigs von der 6 keine weiteren Kanten zu 8,9 oder 12 haben).
+
+Die Typische Situation bei einem Repeat ist, dass aus der Repeat-Region (aus einem oder mehrere Contigs) es Constraints zu allen Abzweigungen gibt, aber nur zu einer Abzweigung gibt es Constraints die von vor der Repeat-Region kommen. Dies ist, was wir als erstes Untersuchen.
+
+Wir ordnen jedem Element $s$ aus $S_0$ jene Knoten aus $H$ zu, welche ausschließlich von $s$ erreicht werden können und bezeichnen die Menge dieser Knoten mit $V_s$ (es gilt stets $s \in V_s$). Nun erstellen wir für jedes $s$ aus $S_0$ eine Menge $P_s$ aus Contigs in $P$ welche Constraints in $V_s$ aufweisen. Die $P_s$ Mengen schneiden wir (der Schnitt ist nicht leer da $a^*$ immer enthalten ist) und ermitteln den Contig $l$ mit der niedrigsten Position aus dem Schnitt. Schließlich berechnen wir für jedes $s$ die Anzahl $k_s$ der Contigs aus $P_s$ welche vor $l$ liegt. Sollte für ein $\hat{s}$ aus $S_0$ gelten, dass $k_{\hat{s}} \geq 5k_s+2$ für alle anderen $s \in S_0$ gilt, so ist dies ein deutliches Zeichen, dass  $\hat{s}$ der nächste Contig ist. 
+
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{bilder/repeat_kreis}
+	\end{center}
+	\label{repeat_kreis}
+	\caption{repeat in den Daten}
+\end{figure}
+Sollte dies nicht der Fall sein, so wird noch ein zweiter Aspekt betrachet. Wie in Abbildung \ref{repeat_kreis} angedeutet, erzeugt ein Repeat in Daten ein Kreis in den dazugehörigen Graphen. Befinden wir uns gerade im roten Abschnitt, und haben den Kreis noch nicht durchlaufen, so sollten wir zuerst den Kreis gehen. Wenn wir den Kreisdurchlaufen haben, können wir immer noch den anderen Abzweig nehmen.
+
+Leider sind diese Kreise nicht so eindeutig zu identifizieren. Es würde reichen, dass ein Constraint von einem der letzen Contigs zu einem der ersten Contigs geht, damit jeder Contig von jedem erreichbar ist. Somit kann man nicht einfach nach einem Kreis in $G$ suchen. Daher schränken wir $G$ auf die Knoten ein, die noch nicht besucht wurden und suchen dann $s_1,s_2 \in S_0$, sodass es einen Weg von $s_1$ nach $s_2$ gibt, aber keinen Weg von $s_2$ nach $s_1$. In so einem Fall werfen wir $s_2$ aus $S_0$ raus.
+
+Sollten wir es geschafft haben uns auf ein Pfad festzulegen, so wird dieser beschritten, ansonsten werden alle Pfade die noch nicht ausgeschlossen werden konnten, nacheinander ausprobiert und deren Lösungen gesammelt zurückgegeben.
+
+Wenn es keine weiteren Contigs gibt und die Länge vom Strang im erlaubten Bereich ist, so wird die Lösung zurückgegeben.
+
+Gibt es mehr als eine Lösung, so werden die Lösungen anhand der Anzahl der verwendeten Contigs und der Anzahl an Repeats verglichen (viele Contigs und wenig Repeats sind gut).
+
+
+
+
+
+
 \section{Algorithmus Phase 2: Lösung mithilfe vom LP verfeinern}
 \section{Auswertung der Ergebnisse}
 \section{Diskussion}
