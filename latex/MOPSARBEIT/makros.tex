@@ -1,0 +1,110 @@
+% Definieren Sie hier Ihre Makros
+
+
+
+% Setzen Sie hier die folgenden Makros: Name, Titel und Typ der Arbeit
+\newcommand{\Autor}{Marvin Lindemann}
+\newcommand{\Titel}{Contig-Assembly der MHC-Region mittels
+Linearer Programmierung}
+\newcommand{\Typ}{Bachelorarbeit}
+
+
+
+
+
+% Einige Beispiele, die vielleicht interessant sind:
+% deutsche Bezeichnung
+\floatname{algorithm}{Algorithm}
+\newtheorem{prop}{Proposition}[chapter] 
+\newtheorem{lem}[prop]{Lemma}
+\newtheorem{thm}[prop]{Theorem}
+\newtheorem{kor}[prop]{Corollary}
+\newtheorem{beobachtung}[prop]{Beobachtung}
+\theoremstyle{definition} 
+\newtheorem{defi}[prop]{Definition}
+%\newtheorem*{defi}{Definition} 
+\newtheorem{beh}[prop]{Claim}
+\newtheorem*{beh*}{Claim}
+\theoremstyle{remark} 
+\newtheorem*{rem}{Remark}
+\newtheorem{bsp}[prop]{Example}
+\newenvironment{bew}{\begin{proof}[Proof. ]}{\end{proof}}
+\newenvironment{ohne}{\begin{proof}[Ohne Beweis.]}{\end{proof}}
+
+% Ausgleichsspalten fuer tabularx
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+
+% Komplex-Klasse
+\newcommand{\Klasse}[1]{\text{\mbox{\rm\bf #1}}}
+
+\newcommand{\NachbarSym}{\mathcal{N}}
+\newcommand{\Nachbar}[1]{\mathcal{N}(#1)}
+
+% Problem
+%\newcommand{\Problem}[1]{\text{\mbox{\rm\it #1}}}
+\newcommand{\Problem}[1]{\text{\mbox{\rm\scshape #1}}}
+\newcommand{\DecProblem}{\ensuremath{\mathcal{D}}}
+\newcommand{\Len}{\ensuremath{\texttt{len}}}
+\newcommand{\Max}{\ensuremath{\texttt{max}}}
+
+% Kurzbezeichnungen
+\newcommand{\gdw}{\ensuremath{\ \Leftrightarrow \ }}
+\newcommand{\GDW}{\ensuremath{\ \Longleftrightarrow \ }}
+\newcommand{\entspr}{\ensuremath{ \widehat{=} }}
+\newcommand{\inv}[1]{\ensuremath{ {#1}^{-1} }}
+\newcommand{\manyone}{\ensuremath{\mbox{$\,\leq_{\rm m}^{{\Klasse{p}}}$\,}}}
+\newcommand{\p}{\Klasse{P}}
+\newcommand{\np}{\Klasse{NP}}
+
+% Definitition von einem Problem, 5 Parameter
+% 1: Name des Problems
+% 2: Label zum Referenzieren
+% 3: Gegeben:
+% 4: Gesucht:
+% 5: Abk. in Klammern hinter dem Namen (optional)
+\newcommand{\Problemdef}[5]{
+    \begin{center}\label{#2}\small\begin{tabularx}{0.9\textwidth}{lL}\toprule
+            \multicolumn{2}{c}{{\Problem{#1} }
+                \ifthenelse{\equal{#5}{}}{}{~(\Problem{#5})}}\\ \hline
+            \textbf{Given:}&{#3}\\
+            \textbf{Question:}&{#4}\\ \bottomrule
+\end{tabularx}\end{center}}
+
+
+\newcommand{\Optiproblemdef}[5]{
+    \begin{center}\label{#2}\small\begin{tabularx}{0.9\textwidth}{lL}\toprule
+            \multicolumn{2}{c}{{\Problem{#1} }
+                \ifthenelse{\equal{#5}{}}{}{~(\Problem{#5})}}\\ \hline
+            \textbf{Given:}&{#3}\\
+            \textbf{Output:}&{#4}\\ \bottomrule
+\end{tabularx}\end{center}}
+
+%\newcommand{\Problemdef}[5]{
+%\begin{center}\label{#2}\begin{tabularx}{0.75\textwidth}{lL}\hline\hline
+%\multicolumn{2}{c}{{\Problem{#1} }
+%\ifthenelse{\equal{#5}{}}{}{~(\Problem{#5})}}\\ \hline
+%\textbf{Gegeben:}&{#3}\\
+%\textbf{Frage:}&{#4}\\ \hline\hline
+%\end{tabularx}\end{center}}
+
+
+% Weitere Makros:
+\newcommand{\bb}{\ensuremath{\mathbb{B}}}
+\newcommand{\nn}{\ensuremath{\mathbb{N}}}
+\newcommand{\zz}{\ensuremath{\mathbb{Z}}}
+\newcommand{\qq}{\ensuremath{\mathbb{Q}}}
+\newcommand{\rr}{\ensuremath{\mathbb{R}}}
+
+\newcommand{\npc}{$\np$\text{-complete}}
+
+\newcommand{\conp}{\Klasse{coNP}}
+\newcommand{\conpc}{\Klasse{coNP}\text{-complete}}
+\newcommand{\conph}{\Klasse{coNP}\text{-hard}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Algorithm-Umgebung
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\renewcommand{\algorithmicrequire}{\textbf{Eingabe:}}
+\renewcommand{\algorithmicensure}{\textbf{Ausgabe:}}

@@ -1,0 +1,11 @@
+\chapter*{Zusammenfassung}
+
+
+Diese Bachelorarbeit befasst sich mit der Assemblierung des MHCs mittels Methoden der linearen Programmierung.
+Der MHC ist ein Teilstück der DNA mit großer Variabilität, welches aufgrund dessen stark in Prozesse des Immunsystems involviert ist. 
+%Um die konkrete Basensequenz zu bestimmen, reichen die etablierten Sequenzierungstechnologien nicht aus. In dieser Arbeit haben wir 
+Die Grundlage dieser Arbeit besteht aus einem Datensatz der Manchot-Forschungsgruppe vom Institut f¨ur Medizinische Mikrobiologie und Krankenhaushygiene der HHU. Dieser beinhaltet eine Liste von Teilstücken des MHCs, den Contigs, und eine Liste mit paarweisen Distanzen einzelner Contigs. Das Ziel ist es, mittels dieser Daten den Strang zu rekonstruieren.
+Dazu gehen wir wie folgt vor: Im ersten Schritt formalisieren wir das Probleme und legen Anforderungen fest, die eine Lösung (möglichst gut) erfüllen sollte. Danach fassen wir das Problem als lineares Optimierungsproblem auf, welches wir mittels Gurobi lösen. Wir diskutieren zwei Möglichkeiten der Visualisierung und bewerten mittels dieser die zuvor erstellte Lösung. 
+Eine Schwäche der ersten Lösung ist, dass Contigs im Strang auch doppelt - als Repeats - auftreten können und dies im Programm nicht berücksichtigt wird.
+Um dies auszugleichen, modifizieren wir das Verfahren. In einem Algorithmus bestehend aus zwei Phasen wird zunächst ein Pfad aufgebaut, der grob dem gesuchten Aufbau entspricht. Hier werden bereits einige vorläufige Repeats gesetzt. In der zweiten Phase werden dann mittels konstruierter Gütefunktionen weiter Contigs eingeordnet, unsichere Repeats entfernt und weitere Repeats gesetzt.
+Zuletzt werden dann die Ergebnisse ausgewertet und weitere Ansätze diskutiert.

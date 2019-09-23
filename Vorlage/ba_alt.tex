@@ -1,0 +1,444 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Uni Duesseldorf
+% Lehrstuhl fuer Datenbanken und Informationssysteme
+% Vorlage fuer Bachelor-/Masterarbeiten
+% Optimiert fuer den Original-Latex-Kompiler LATEX.EXE (LaTeX=>PS=>PDF)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Ueberarbeitung für pdflatex (LaTeX=>PDF)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Vorlage Changelog:
+% 10.09.2015 (Matthias Liebeck): Nummerierung des Inhaltsverzeichnis nun römisch, Beispiel für einen Anhang eingebaut, \raggedbottom hinter sections eingefügt
+% 11.07.2018 (Matthias Liebeck): Ersetzung des Bibliographiestils, Einsatz von Biber
+% 04.09.2018 (Matthias Liebeck):
+%   * Bibtex: unnötige Bibtexfelder beim Rendern ausblenden (thx @ Markus Brenneis)
+%   * ngerman: "et al." im BibTeX für drei oder mehr Autoren
+%   * Neuer Befehl \sectionforcestartright: Sections immer rechts beginnen (thx @ Philipp Grawe)
+%   * ngerman: Deutsche Anführungszeichen im Literaturverzeichnis (thx @ Markus Brenneis)
+%   * ngerman: Deutsche Anführungszeichen im Literaturverzeichnis (thx @ Markus Brenneis)
+% 16.10.2018 (Matthias Liebeck): Zwei fixes an \sectionforcestartright (thx @ Markus Brenneis)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% BEGINN EINSTELLUNG FUER DIE ARBEIT. UNBEDINGT ERFORDERLICH! %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Geben Sie Ihren Namen hier an:
+\newcommand{\bearbeiter}{Marvin Lindemann}
+
+% Geben Sie hier den Titel Ihrer Arbeit an:
+\newcommand{\titel}{Contig-Assembly der MHC-Region mittels Linearer Programmierung}
+
+% Geben Sie das Datum des Beginns und Ende der Bachelorarbeit ein:
+\newcommand{\beginndatum}{09. Juni 2019}
+\newcommand{\abgabedatum}{09.~September~2019}
+
+% Geben Sie die Namen des Erst- und Zweitgutachters an:
+\newcommand{\erstgutachter}{Prof. Dr. Gunnar W. Klau}
+\newcommand{\zweitgutachter}{Dr. Alexander Dilthey}
+
+% Falls Sie die Arbeit zweiseitig ausdrucken wollen,
+% benutzen Sie die folgende Zeile mit
+% \AN fuer zweiseitigen Druck
+% \AUS fuer einseitigen Druck
+\newcommand{\zweiseitig}{\AUS}
+
+% Falls Sections immer rechts beginnen sollen. Gerade für Masterarbeiten
+% interessant. Bei kurzen Bachelorarbeiten eher weniger zu verwenden.
+\newcommand{\sectionforcestartright}{\AUS}
+%\newcommand{\sectionforcestartright}{\AN}
+
+% Falls die Arbeit in englischer Sprache verfasst 
+% werden soll, dann benutzen Sie die folgende Zeile mit
+% englisch fuer englische Sprache
+% deutsch fuer deutsche Sprache
+\newcommand{\sprache}{deutsch}
+
+% Hier wird eingestellt, ob es sich bei der Arbeit um eine Bachelor- 
+% oder Masterarbeit handelt (unpassendes auskommentieren!):
+\newcommand{\arbeit}{Bachelorarbeit}
+%~ \newcommand{\arbeit}{Masterarbeit}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% ENDE EINSTELLUNGEN %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Die folgende Zeile NICHT EDITIEREN oder loeschen
+\input{titelmakros}
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% BEGINN TEXTTEIL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Text entweder direkt hier hinein schreiben oder, im Sinne der
+% besseren Uebersichtlich- und Bearbeitbarkeit mittels \input die
+% einzelnen Textteile hier einbinden.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{einleitung2}
+
+\section{Formalisierung}\raggedbottom 
+
+Die vorliegenden Daten der Manchot-Forschungsgruppe bestehen aus zwei Dateien: 
+\begin{enumerate}
+\item einer Liste von allen Contigs und deren Länge gemessen in der Anzahl an Basenpaaren, die im Contig auftreten
+\item einer Datei mit den eingangserwähnten Constraints.
+\end{enumerate}
+Letztere besitzt folgenden dreispaltigen Aufbau:
+\begin{align*}
+&a \quad b \quad 1000\\
+&a \quad b \quad 1100\\
+&b \quad c \quad 3000\\
+&a \quad c \quad 6000
+\end{align*}
+
+
+Dabei entspricht jede Zeile einem Constraint. Die ersten beiden Zeilen geben jeweils die beiden involvierten Contigs an. In der dritten Spalte sind die gemessenen Distanzen angegeben. Diese sind als Entfernung vom rechten Rand des ersten Contigs zum linken Rand des zweiten Contigs in Basenpaaren zu interpretieren. Negative Distanzen sind auf Überlagerungen einzelner Contigs zurückzuführen. Durch Hinzunahme der Längen der Contigs lassen sich die Distanzen auch so modifizieren, dass sie den Abstand der ersten Basenpaare der jeweiligen Contigs angeben. Im Folgendem werden wir nur noch die so modifizierten Distanzwerte verwenden. Zusätzlich zu den Constraints aus den Long-Reads stammen etwa 2\% der Constraints direkt aus der Illumina Sequenzierung. Hier wurde mehrmals die Distanz zwischen benachbarte Contigs gemessen und der Durchschnitt daraus berechnet. Dadurch können auch nicht ganzzahlige Werte als Distanzen auftreten.
+
+Wir werden im folgenden oft eine graphentheoretische Darstellung der Daten verwenden. Dabei sind die Contigs Knoten in einem Multigraphen und ein Constraint $(a,b,d)$ eine gerichtete Kante von $a$ nach $b$ mit Länge $d$ als Attribut. Dabei werden die Begriffe Contig und Knoten sowie Constraint und Kante synonym verwendet: „Nachfolger eines Contigs“, „ausgehender Constraint“.
+
+Zu einer gegebenen Positionierung ist der Fehler eines Constraints gegeben durch den Unterschied von der Distanz in der Positionierung zu der Distanz im Constraint. Wenn also Contig $a$ 300 Basenpaare vor Contig $b$ positioniert wurde, dann haben die beiden Constraints $(a,b,200)$ und $(a,b,400)$ beide einen Fehler von 100.
+Ein Constraint ist durch eine Positionierung erfüllt, bzw eine Positionierung von einem Constraint bestätigt, wenn der Fehler des Constraints kleiner als ein Schwellenwert ist, der im Laufe des folgeden Abschnittes festgelegt wird.
+\subsection{Anforderungen an die Lösung}
+Nun wollen wir einige Gütekriterien für mögliche Lösungen festlegen, um während der Bearbeitung Orientierungspunkte für die weitere Optimierung des Algorithmus zu haben und um diesen nach Abschluss anhand dieser Kriterien zu bewerten.
+Folgende Punkte sollen beachtet werden:
+\begin{enumerate}
+\item Wenn mehr als ein Constraint eine ähnliche Distanz zwischen zwei Contigs sieht, sollten die Lösung diese Distanz möglichst gut erfüllen.
+\item Ein Großteil der restlichen Constraints sollte auch zu der Positionierung passen.
+\item Es sollten möglichst wenig Contigs nahe zueinander positioniert werden, die keine gemeinsamen Constraints aufweisen. Diese Situation wird durch Abbildung \ref{gespallten} illustriert. Der obere Teilabschnitt zeigt eine Lösung, bei der die Bedingung nicht erfüllt wurde. Realistischer ist jedoch, dass hierbei ein Teilblock bestehend aus Contig 12 und Contig 32 doppelt in dem DNA-Strang vorkommt und bei der Lösung des Problems zwei separate Stränge ineinander verflochten wurden. Dies ist in der unteren Bildhälfte dargestellt.
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{bilder/gespallten}
+	\end{center}
+	\caption{verflochtene Stränge}
+	\label{gespallten}
+\end{figure}
+	
+\item Die Entfernung vom ersten zum letzten Contig sollte zwischen 4,8 Millionen und 5 Millionen Basenpaare lang sein, da dies die ungefähre Gesamtlänge des Strangs ist.
+\item Bei einer Lösung wäre es zudem gut, wenn man Informationen darüber besitzen würde, wie wahrscheinlich es ist, ob verschiedene Teilgebiete tatsächlich so im Strang auftreten. Dabei wäre zum Beispiel eine Unterteilung in „sichere“ und „unsichere“ Gebiete interessant.
+\end{enumerate}
+
+Nun wollen wir konkretisieren, bis zu welchem Abstand Constraints ähnliche Distanzen haben. Dazu betrachten wir, wie die Standardabweichung der Distanzen von Constraints verteilt ist.
+In der Abbildung \ref{std} werden die zu einem Basenpaar zugehörigen Constraints gegen ihre Standardabweichung geplottet. 
+Dabei wurden pro Basenpaar die jeweiligen Distanzen der Constraints zu einer (Multi-)Menge zusammengefasst. Es wurde symmetrisch vorgegangen, das heißt Paare der Form (a,b) und (b,a) werden in der gleichen Menge behandelt. Ferner wurden Mengen mit einem Element nicht berücksichtigt, da es hier keine Abweichung gibt. Für die jeweiligen Mengen wurden dann die Standardabweichungen berechnet, der Größe nach geordnet und dann mit Berücksichtigung dieser Ordnung geplottet.
+Der Plot wird mit zwei Skalierungen angegeben: Auf der linken Seite sieht man eine logarithmische Skalierung, während der rechte Plot eine lineare Skalierung verwendet.
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=0.8\textwidth]{bilder/std}
+	\end{center}
+	\caption{Standardabweichung der Distanzwerte}
+	\label{std}
+\end{figure}
+
+
+
+
+Eine optische Betrachtung der Plots legt folgende Interpretation nahe: 
+Es gibt einen Bereich der natürlichen Abweichung in der Datenmenge. Dies entspricht dem relativ flachen Anfangsbereich des Graphen. Ab einem gewissen Punkt "explodieren" die Werte. Hier ist die Standardabweichung innerhalb der Constraints so hoch, dass man nicht mehr von natürlicher Abweichung innerhalb der Daten ausgehen kann. Die orangene Linie grenzt diese Bereiche intuitiv voneinander ab. 
+Diese liegt bei einer Standardabweichung von 500 Basenpaaren. 
+Somit unterstützen sich Constraints, deren Distanzwerte sich nicht um mehr als 500 Basenpaare unterscheiden.
+
+Um die oben genannten Forderungen an eine Lösung zu erfüllen, ist es notwendig die Repeats auszumachen und die Constraints auf diese Repeats aufzuteilen. Dazu halten wir uns an das Prinzip: $\glqq$so viel wie nötig, so wenig wie möglich$\grqq$.
+Um dies sicherzustellen, sollte ein Contig, der mehrfach in der DNA vorkommen soll, zwei Punkte für jede seiner Versionen erfüllen:
+
+\begin{enumerate}
+\item Es sollte mindestens ein Contig in der Nachbarschaft liegen, zu welchem es zwei oder mehr Constraints gibt.
+\item Sowohl unter den Vorgängern als auch unter den Nachfolgern des Contigs, sollte es je einen Contig geben, der einen gemeinsamen Constraint aufweist.
+\item Sowohl zu einem der Vorgängern als auch zu einem der Nachfolgern des Contigs, sollte es ein Constraint mit dem Contig geben.
+\end{enumerate}
+Der erste Punkt soll sicherstellen, dass es nicht einfach ein Fehler in den Daten ist. Der zweite Punkt stellt sicher, dass der richtige Contig als Repeat markiert wurde. Wenn der Distanzwert eines Constraints nicht erfüllt ist, ist erstmal nicht klar, welcher der beiden beteiligten Contigs eine Repeat-Version haben soll.
+
+ % Gebiete anders zueinander stehen, als sie es gerade tun, so ist nicht klar welche der beiden Gebiete ein Repeat besitzt. Daher ist es Sinnvoll dass die Repeatversion Constraints zu beiden Seiten haben muss, um sich in den Strang zu integrieren.
+%Denn wenn viele Constraints zwischen zwei Gebiete nahlegen, dass diese Gebiete anders zueinander stehen, als sie es gerade tun, so ist nicht klar welche der beiden Gebiete ein Repeat besitzt. Daher ist es Sinnvoll dass die Repeatversion Constraints zu beiden Seiten haben muss, um sich in den Strang zu integrieren.
+\section{Das lineare Programm}
+\subsection{Eine kurze Einführung}
+Die Problemstellung in dieser Arbeit lässt sich als lineares Programm (kurz LP) formulieren. In der linearen Programmierung möchten wir, unter Berücksichtigung von linearen Nebenbedingungen an die Funktionsparameter, eine lineare Funktion maximieren oder minimieren.
+Formal mathematisch lässt sich der Minimierungsfall so fassen:
+\begin{align*}
+	Gegeben:&\quad c \in \mathbb{R}^{n},\ A \in \mathbb{R}^{n \times m},\ b \in \mathbb{R}^{m} \\
+	Gesucht:&\quad \argmin_{ x\in \mathbb{R}^n}\{c^Tx\,|\, Ax \leq b\}
+\end{align*}
+Dabei wird folgende Notation verwendet:
+\begin{description}
+\item[\quad Variablen] $x_1,..., x_n$
+\item[\quad Zielfunktion]  $c^Tx = \sum_{i=1}^n c_i x_i$
+\item[\quad Nebenbedingungen]  $Ax \leq b \ \Leftrightarrow\ \sum_{i=1}^n a_{ji} x_i \leq b_j, \ j = 1,...,n$
+\end{description}
+Lineare Programme lassen sich in Polynomialzeit berechnen. Daher eignen sie sich oft als Werkzeug für verschiedenste Probleme. Es ist auch möglich, den Definitionsraum der Variablen (teilweise) auf ganze Zahlen zu beschränken. Dies bezeichnet man dann als ein ganzahliges lineares Programm (kurz ILP). ILPs bieten einige Möglichkeiten die mit LPs nicht umzusetzen wären. Sie sind dafür aber NP-schwer und somit wahrscheinlich nicht polynomialzeitberechenbar.
+
+\subsection{Assembly als LP}
+Im Folgenden bezeichnet $C$ die Menge aller Contigs und $D$ die Multimenge aller Constraints. Dabei wurde der Distanzwert jedes Constraints in $D$ so umgerechnet, dass er die Entfernung von linken Rand vom ersten Contig bis zum linken Rand des zweiten Contigs angibt.
+Wir möchten die Contigs so positionieren, dass der durchschnittliche Fehler aller Constraints möglich klein ist. Als Formel:
+\[ \pos = \argmin_{\pos\,:\, C \rightarrow \mathbb{N}} \ \sum_{(a,b,\delta) \in D} |\pos(b) - \pos(a) - \delta| \] 
+Um daraus ein lineares Programm zu machen, führen wir für jeden Constraint $(a,b,\delta)$ aus $D$ eine Hilfsvariable $\varepsilon$ ein:
+\[ \varepsilon = |\pos(b) - \pos(a) - \delta| \]
+Mit Hilfe dieser Variablen können wir die zu minimierende Zielfunktion wie folgt darstellen:
+\begin{align*}
+\quad& \sum_{d \in D} \varepsilon_{d}
+\end{align*}
+Nun müssen wir noch die Informationen über die Fehler, also $\varepsilon = |\pos(b) - \pos(a) - \delta|$, einbauen. Da wir ohnehin die Summe der Fehler minimieren wollen, ist es ausreichend, folgende Ungleichung zu fordern:
+\begin{align*}
+\varepsilon \geq |\pos(b) &- \pos(a) - \delta|
+\end{align*}
+Dies liegt daran, dass bei Minimierung immer die untere Schranke angenommen wird, welche in diesem Fall die Gleichheit ist. Nun ist die Betragsfunktion aber nicht linear. Sie lässt sich aber äquivalent durch die folgenden beiden linearen Ungleichung darstellen:
+\begin{align*}
+\pos(b) - \pos(a) - \delta &\leq \varepsilon\\
+-\pos(b) + \pos(a) + \delta &\leq \varepsilon
+\end{align*}
+
+Zusammengefasst erhalten wir also folgendes lineares Programm für die Berechnung der optimalen Positionierung:
+
+\begin{align*}
+\text{Variablen:}\quad& \pos(c) \ \forall c \in C \ \ \text{und} \ \ \varepsilon_{d} \ \forall \ d \in D\\
+\text{Zielfunktion:}\quad& \sum_{d \in D} \varepsilon_{d}\\
+\text{Bedingungen:}\quad \begin{split} \pos(b) - \pos(a) - \delta \leq \varepsilon_{d}\\
+-\pos(b) + \pos(a) + \delta \leq \varepsilon_{d} \end{split}\quad \forall \ (a,b,\delta) = d \in D
+\end{align*}
+Distanzwerte weisen zu große Schwankungen auf, um auf ein Basenpaar genau zu sein. Daher bietet es sich an, die Relaxierung des LPs zu betrachten, also auch reelle Positionen zuzulassen. Durch diese Lockerung der Bedingungen lässt sich das Programm wesentlich schneller lösen.
+
+Dieses LP sorgt nur dafür, dass die Constraints möglichst gut erfüllt sind. Weder verhindert es, dass Contigs, welche keine Constraints vorweisen, nahe positioniert werden, noch erkennt es Repeats. Um das weitere Vorgehen planen zu können, bietet es sich trotzdem an, diesen Ansatz auszuführen und anhand der Lösung konkrete Problemstellen zu lokalisieren. 
+
+
+Die Implementierung erfolgt in der Jupyter-Umgebung der Programmiersprache Python. Dabei wird Gurobi, einem Programm das auf mathematische Optimierung spezialisiert ist, verwendet. Das Programm liefert uns als Rückgabe eine konkrete Positionierung der Contigs. Nun wäre es gut, wenn wir eine Möglichkeit hätten, festzustellen, inwiefern die von uns festgelegten Kriterien erfüllt sind. Im nächsten Kapitel werden dazu verschiedene optische Verfahren diskutiert.
+
+%Somit lässt es sich nur unterstützend einsetzen. Wie mit Hilfe von ILPs auch diese beiden Punkte abgedeckt werden könnten, diskutieren wir im letzten Kapitel.
+
+
+
+\section{Wie man eine Lösung grafisch darstellt}
+Ein wichtiger Aspekt für die Arbeit mit großen Datenmengen ist die Visualisierung.
+Sie sollte in der Lage sein, die wichtigsten Informationen auf einen Blick sichtbar zu machen. Wir beschäftigen uns nun mit Möglichkeiten, konkrete Positionierungen der Contigs, also Abbildungen $pos: C \rightarrow \mathbb{R}$, zu visualisieren.
+Eine erste, naheliegende Option ist eine lineare Darstellungsweise. Hierbei werden die einzelnen Contigs gemäß ihrer Positionierung und ihrer Länge auf der reellen Zahlengerade eingezeichnet. Um Überlappungen zu beachten, bietet es sich an, mehrschichtig zu arbeiten. Mehrschichtig bedeutet hier, dass bei Überlappung zweier Contigs der hintere Contig in einer anderen Höhe geplottet wird. Diese Methode wird durch Abbildung \ref{plotmehrschichtig} illustriert.
+Vorteile dieser Darstellungsweise sind unter anderem die folgenden Aspekte:
+\begin{enumerate}
+\item Der gesamte Strang inklusive seiner Länge ist auf einen Blick sichtbar. Dies liefert dem Betrachter einen groben Überblick. Ferner lässt sich der fünfte Unterpunkt der Anforderungen an Lösungen, die Länge des Stranges, so auch optisch leicht überprüfen.
+%\item Durch das mehrschichtige Arbeiten lassen sich Regionen mit einer hoher Überlappungsdichte (also hoher Coverage) leicht lokalisieren.
+\item Regionen, die hauptsächlich aus großen oder aus kleinen Contigs bestehen, lassen sich anhand des Plots leicht lokalisieren. Für den fünften Unterpunkt unsere Anforderungen an eine Lösung lässt sich dies als Indiz für die Sicherheit dieser Umgebungen verwenden. In Gebieten, in denen nur wenige, aber große Contigs vorkommen, sollten im Schnitt weniger Fehler hinsichtlich der geringeren Datenmenge auftreten als in mit vielen kleinen Contigs überfüllten Regionen.
+\item Durch Hinzunahme von Färbungen ist es möglich, einige Kerninformationen leicht zugänglich zu machen. Dazu zählen etwa die Anzahl der Repeats eines einzelnen Contigs oder der Gesamtanteil an sich wiederholenden Contigs.
+\end{enumerate}
+Jedoch gibt es einen zentralen Nachteil bei der Wahl dieser linearen Darstellungsform: Die Information, die wir durch die Constraints erhalten, werden in der Visualisierung nicht berücksichtigt.
+Damit lässt sich die Einhaltung der ersten drei Kriterien an eine Lösung optisch nicht analysieren.
+Beispielsweise sieht man nicht, ob benachbarte Contigs auch tatsächlich gemeinsame Constraints aufweisen.
+Um auch die Constraints mit einzubeziehen, bedarf es einer weiteren Darstellungsweise.
+
+Um auch die Constraints mit einzubeziehen, bedarf es einer weiteren Darstellungsweise.
+Ähnlich wie in Abbildungen \ref{abb1} und \ref{abb3} lassen sich dafür gerichtete Graphen verwenden. Dabei bildet die Menge der Contigs die Knoten des Graphen. Constraints zwischen zwei Knoten lassen sich als (gerichtete) Kanten darstellen.
+Um eine gewisse Übersichtlichkeit zu erhalten, ist es aber sinnvoll, nicht alle Constraints zu plotten.
+Stattdessen nutzen wir die gegebene Positionierung aus und zeichnen nur Kanten für nah beieinander positionierte Contigs mit gemeinsamen Constraints.% und Kanten welche besonders lang sind.
+Dabei gehen wir für jeden auftretenden Contig $a$ wie folgt vor:
+\begin{itemize}
+\item Zunächst werden alle Constraints gelöscht, deren Fehler in der vorgegebenen Positionierung größer als eine fixierte Konstante ist. Oftmals fällt die Wahl hier auf eine Zahl in der Größenordnung $500$ gemäß der Überlegungen bezüglich der Standardabweichungen in dem Kapitel der Formalisierung.
+\item Ferner werden mehrfach auftretende Constraints zusammengefasst und alle Schleifen, also alle Constraints der Form $(a, a, d)$ gelöscht.
+\item Sei nun $N_a$ die Menge aller Contigs, die zusammen mit $a$ in einem verbliebenden Constraints enthalten sind. Nun werden die Contigs in $N_a$ und $a$ selbst bezüglich ihrer Positionierung sortiert.
+\item Schließlich wird je eine Kante von $a$ zu den ersten beiden Contigs, die hinter $a$ positioniert wurden, gezeichnet. Umgekehrt wird je eine Kante von den ersten beiden Contigs, die vor $a$ positioniert wurden, zu $a$ gezeichnet.
+%\item Schließlich wird noch eine grün gefärbte Kante von $a$ nach $b$ gezeichnet, wenn es ein Constraint von $a$ nach $b$ aber weder ein Constraint von $a$ nach $c$ und von $b$ nach $c$ gibt, noch ein Constraint von $c$ nach $a$ und von $c$ nach $b$. 
+\item Zusätzlich werden noch grün gefärbte Kanten gezeichnet für alle Constraints, die nicht verlängerbar sind. Als verlängerbar gelten alle Constraints von $a$ nach $b$ und von $b$ nach $c$ für die es ein Constraint von $a$ nach $c$ gibt.
+\end{itemize}
+Im Allgemeinen tritt hierbei auch der Fall auf, dass eine Kante $(a,b)$ während des Prozesses doppelt eingezeichnet werden soll: Einmal im Durchgang von $a$ als auslaufende Kante und einmal im Durchgang von $b$ als einlaufende Kante.
+Sie werden trotzdem nur einmal gezeichnet.
+
+Die Wahl, dass jeder Knoten zwei Vorgänger und zwei Nachfolger bekommt, ist nicht fest, hat sich aber als besonders geeignet herausgestellt. Bei nur einem Vorgänger und einem Nachfolger kann es schnell passieren, dass ein eigentlich zusammenhängender Strang unzusammenhängend dargestellt wird. Abbildungen \ref{t} und \ref{tt} illustrieren diese Situation. Dabei entspricht die erste Abbildung der tatsächlich im Programm auftretenden Darstellungsform. In der zweiten Abbildung wurde die Situation noch einmal etwas schematischer skizziert und optisch mit Farben unterlegt.
+
+Auch können mehrere Kanten interessante Einblicke über die Struktur geben. So gibt es Contigs die nur eine einlaufende Kante besitzen, oder deren Kanten mehrere Contigs überspringen. Alles ein Zeichen von Unstimmigkeiten, die näher untersucht werden könnten.
+
+
+%Die grünen Kanten geben einen guten Überblick, wie weitläufig die Constraints in dem Bereich vernetzt sind. Lange grüne Kanten die sich weitläufig überschneiden zeugen von einem Sicheren Gebiet, wärend wenige kurze grüne Kanten sehr unsicher sind.
+%TODO height=30cm
+\begin{figure}
+\begin{center}
+\includegraphics[width=6.6cm]{bilder/vergrossert}
+\end{center}
+\caption{Ergebnis des LPs}
+\label{ersterdurchlauf}
+\end{figure}
+%\newpage
+	
+%	\caption{Ergebnis}
+%	\label{ersterdurchlauf}
+%\end{figure}
+
+
+
+%\begin{minipage}{0.5\textwidth}
+%\begin{figure}
+%	\begin{center}
+%		\includegraphics[width=0.9\textwidth]{bilder/t}
+%	\end{center}
+%	\caption{t}
+%	\label{t}
+%\end{figure}
+%\end{minipage}
+
+%\begin{minipage}{0.5\textwidth}
+%\begin{figure}
+%	\begin{center}
+%		\includegraphics[width=0.9\textwidth]{bilder/tt}
+%	\end{center}
+%	\caption{tt}
+%	\label{tt}
+%\end{figure}
+%\end{minipage}
+\newpage
+\section{Algorithmus Phase 1: Grobe Lösung aufbauen}
+
+Am Ende des vorherigen Abschnittes haben wir festgestellt, dass eine einfache Ausführung des lineare Programmes nicht ausreicht, um eine Lösung zu konstruieren, die unsere Gütekriterien erfüllt. 
+In dem Graphen, der zu der Lösung korrespondiert, erkennt man dies anhand der starken Verflechtung/Verknotung verschiedener Teilstränge
+Um dies möglichst zu verhindern, gehen wir nun wie folgt vor:
+
+Unser Ziel ist es, ein "Grundgerüst" für eine fertige Lösung aufzubauen.
+Dieses soll die Form eines Pfades von dem ersten bis zum letzten Contig des Stranges besitzen.
+Dabei sollte der Pfad möglichst viele Contigs enthalten, welche zueinander richtig positioniert sind.
+Ist ist nicht notwendig, dass alle Contigs korrekt positioniert sind, da das lineare Programme vereinzelte Fehlpositionierungen der Contigs gut beheben kann. 
+
+
+Wir speichern die Constraints als einen gerichteten Multigraphen $G$ aus der NetworkX Bibliothek \ref{}.
+
+Für zeitintensivere Berechnungen, erstellen wir eine reduzierte Version $G_r$, in der ähnliche Kanten zusammengefasst werden zu einer Kante. Dabei werden für je zwei Contigs alle Distanzwerte zwischen diesen beiden Contigs sortiert (wobei für eine Richtung die Distanzwerte als negativ betrachtet werden). Dann werden die Distanzwerte aufgeteilt, sobald sie sich mehr als 500 Basenpaare zum nächsten Wert unterscheiden. Die so gruppierten Werte werden durch ihr Median ersetzt und mit der Gruppengröße gewichtet. 
+
+Gehen wir dies an einen kleinen Beispiel durch. Gegeben sind folgende Constraints zwischen zwei Contigs $a$ und $b$:
+\begin{center}
+\begin{tabular}{lr}
+$a$\quad $b$\quad &100\\
+$a$\quad $b$\quad &11\,000\\
+$b$\quad $a$\quad &50\\
+$b$\quad $a$\quad &60\,000\\
+$a$\quad $b$\quad &70\\
+$a$\quad $b$\quad &300\\
+$a$\quad $b$\quad &10\,950\\
+$a$\quad $b$\quad &11\,050\\
+$a$\quad $b$\quad &20\\
+$a$\quad $b$\quad &600\\
+$b$\quad $a$\quad &200
+\end{tabular}
+\end{center}
+Die sortierten Distanzwerte:
+\[-60000\ \ \,{-200}\ \ \,{-50}\ \ \,20\ \ \,70\ \ \,100\ \ \,300\ \ \,600\ \ \,10950\ \ \,11000\ \ \,11050\]
+Gruppen bilden bei Abständen über 500:
+\[-60000\,|\, {-200}\ \ \,{-50}\ \ \,20\ \ \,70\ \ \,100\ \ \,300\ \ \,600\, |\, 10950\ \ \,11000\ \ \,11050\]
+Es resultieren diese drei Kanten in $G_r$:
+
+\begin{center}
+\includegraphics[width=0.4\textwidth]{bilder/dreikannten}
+\end{center}
+
+
+Unser Ziel ist es, ein Pfad durch $G$ zu finden vom ersten bis zum letzten Contig, der möglichst viele Contigs beinhaltet.
+Dafür werden wir beim ersten Contig anfangen und uns Schrittweise vorarbeiten. Sollte sich der Graph aufteilen, so versuchen wir zuerst mithilfe von Heuristiken zu bestimmen, welcher Pfad der richtige ist. Sollte dies nicht möglich sein, werden alle Pfade ausprobiert.
+
+Wir beginnen mit Contig 2345APD an Position 0. Für jede auslaufende Kante $e$ aus 2345APD wird zu dem Endknoten von $e$ die Länge der Kante in einer Liste gespeichert. Die ersten Listen der ersten 10 Contigs sehen so aus:
+\begin{footnotesize}
+\begin{align*}
+\text{1483APD:}& 6632\ \ \,6662\ \ \,6662\\
+\text{1395APD:}& 6877\ \ \,6943\ \ \,6977\ \ \,6979\ \ \,6980\ \ \,6982\ \ \,6985\ \ \,6993\ \ \,6998\ \ \,6999\ \ \,7002\\
+\text{1596APD:}& 9809\ \ \,9867\ \ \,9903\ \ \,9931\ \ \,9939\ \ \,9942\ \ \,9951\ \ \,9978\\
+\text{2235APD:}& 14013\ \ \,14070\ \ \,14179\ \ \,14219\ \ \,14263\ \ \,14290\ \ \,14304\\
+\text{1534APD:}& 14687\ \ \,14732\ \ \,14841\ \ \,14930\ \ \,14957\ \ \,14972\\
+\text{546APD:}& 16242\ \ \,16254\ \ \,16372\ \ \,16470\ \ \,16550\\
+\text{577APD:}& 18659\ \ \,18782\ \ \,18967\ \ \,19040\ \ \,19081\\
+\text{998APD:}& 32244\ \ \,32453\\
+\text{209APD:}& 34061\ \ \,34257\\
+\text{1635APD:}& 43666
+\end{align*}
+\end{footnotesize}
+Es folgen noch 101 weitere Contigs mit jeweils nur einen Eintrag. Diese Werte werden genau wie bei der Erstellung des reduzierten Graphen gruppiert und Position der größten Gruppe den Contigs vorläufig zugeordnet. 
+
+Die Positionierung des Contigs mit der niedrigsten vorläufigen Position wird fest gesetzt.
+%der Contig mit der niedrigsten Position wird als nächstes gesetzt. 
+
+Dies ist in diesem Fall Contig 1483APD an Position 6662. Auch von 1483APD werden die Distanzwerte der auslaufenden Kannten genommen. Diese werden aber zuerst zu seiner Position addiert und dann zu den schon bestehenden Werten von 2345APD hinzugefügt:
+
+\begin{footnotesize}
+\begin{align*}
+\text{1395APD:}&\ 6877\ \ \,6943\ \ \,6977\ \ \,6979\ \ \,6980\ \ \,6982\ \ \,6985\ \ \,6993\ \ \,6998\ \ \,6999\ \ \,7002\quad\quad 6982\ \ \, 6989\ \ \,6994\\
+\text{1596APD:}&\ 9809\ \ \,9867\ \ \,9903\ \ \,9931\ \ \,9939\ \ \,9942\ \ \,9951\ \ \,9978\quad\quad 9906\ \ \,9946\\
+\text{2235APD:}&\ 14013\ \ \,14070\ \ \,14179\ \ \,14219\ \ \,14263\ \ \,14290\ \ \,14304\quad\quad 14109\ \ \,14308\\
+\text{1534APD:}&\ 14687\ \ \,14732\ \ \,14841\ \ \,14930\ \ \,14957\ \ \,14972\quad\quad 14771\ \ \,14976\\
+\text{546APD:}&\ 16242\ \ \,16254\ \ \,16372\ \ \,16470\ \ \,16550\quad\quad 16293\ \ \,16554\\
+\text{577APD:}&\ 18659\ \ \,18782\ \ \,18967\ \ \,19040\ \ \,19081\quad\quad 18698\ \ \,19044\\
+\text{998APD:}&\ 32244\ \ \,32453\quad\quad 32248\\
+\text{209APD:}&\ 34061\ \ \,34257\quad\quad 34065\\
+\text{1635APD:}&\ 43666
+\end{align*}
+\end{footnotesize}
+
+So wird der Strang Contig für Contig aufgebaut. Wir sammeln die bereits fest Positionierten Contigs in einer Menge $P$ und die vorläufig positionierten Contigs in einer Menge $P_V$.% Der einfachheitshalber führen wir folgende Notation ein: Sei $c \in P$, dann ist $P[c]$ die Position des Contigs $c$, analog für $c \in P_V$. 
+Den zuletzt in $P$ hinzugefügten Contig bezeichnen wir mit $a^*$.
+Sollte ein Nachfolger von $a^*$ bereits in $P$ sein, so wird dieser nur erneut aufgenommen, wenn die neue Position mehr als 20\,000 Basenpaare von der alten entfernt ist und die zugehörige Kante im reduzierten Graphen mindestens ein Gewicht von drei aufweist. Weiterhin darf $a^*$ nicht selbst ein Repeat sein. Damit werden Endlosschleifen vermieden und es ist nicht nötig, alle Repeats in dieser Phase zu finden und zu positionieren. Lücken in den Contigs werden in der nächsten Phase erkannt und dann gestopft.
+
+Doch wie wird erkannt, dass der Pfad sich aufspaltet? Dafür wird $P_V$ näher untersucht. Es wird ein Teilgraph $H$ von $G_r$ aus den vorläufig positionierten Contigs genommen. Es werden nur Kanten übernommen, deren Fehler kleiner sind als 500. Sobald es in $H$ mehr als ein Contig keine einlaufenden Kanten besitzt, wird genauer untersucht, mit welchem dieser Contigs weitergearbeitet wird.
+
+Sei $S_0$ die Menge der Contigs ohne einlaufenden Kanten. Sollte es zu einem Contig $s$ aus $S_0$ keine zur Vorpositionierung passende Kante von dem aktuell positionierten Contig aus geben, wird $s$ aus $S_0$ entfernt. Damit wird sichergestellt, dass die Lösung ein Pfad darstellt.
+
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{bilder/msplit3}
+	\end{center}
+	\label{msplit}
+	\caption{}
+\end{figure}
+
+Als erstes behandeln wir Fälle, wie den in Abbilung \ref{msplit} dargestellten Fall. Der abgebildete Graph ist aus der im letzten Kapitel erläuterten Methode entstanden. Die roten Knoten sind die Contigs aus $P_V$, die schwarzen Knoten sind die Contigs $P$, welche Constraints nach $P_V$ aufweisen. Die Knoten wurden nach ihrer Position durchnummeriert und so benannt. Die Zahl an den Kanten gibt die Anzahl an Constraints an, welche die Kante unterstützen.
+%Grüne Kanten sind Kanten, bei denen sowohl Anfangsknoten wie auch  Endknoten keine Constraints zu weiter entfernten Constraints aufweisen
+
+$S_0$ besteht aus den beiden Contigs 7 und 8. Für ein Grundgerüst der DNA ist es egal, mit welchem der beiden Contigs weitergearbeitet wird. Daher werden in einem Fall, bei denen von zwei Contigs aus $S_0$ die gleichen Contigs erreicht werden können, immer der Contig aus $S_0$ entfernt, welcher mit den meisten fest positionierten Contigs erfüllte Constraints aufweist. In diesem Fall wäre es Contig 7, da Contig 8 nur eine einlaufende Kante von 6 aus hat, wohingegen Contig 7 mindestens zwei Einlaufende Kanten hat (wahrscheinlich hat 7 aber auch von den restlichen vorherigen Contigs einlaufende Kanten).
+
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{bilder/bigsplit}
+	\end{center}
+	\label{bigsplit}
+	\caption{}
+\end{figure}
+Nun nehmen wir uns die restlichen Fälle vor, bei denen eine falsche Entscheidung gravierende Auswirkungen haben können. Ein Standardbeispiel ist in Abbildung \ref{bigsplit} dargestellt. Die Menge aus Contig 7, 10 und 11, haben ausschließlich eine Kante zu Contig 6, wärend 8,9 und 12 zu sämtlichen vorhergehnden Contigs Kanten haben (Die sind zwar nicht alle eingezeichnet, aber es werden nur Contigs aus $P$ dargestellt, die eine Kante in $V$ haben und da Contig 6 der eizige Contig mit eine grünen Kante in die Menge 8,9 und 12 ist, können die Contigs von der 6 keine weiteren Kanten zu 8,9 oder 12 haben).
+
+Die Typische Situation bei einem Repeat ist, dass aus der Repeat-Region (aus einem oder mehrere Contigs) es Constraints zu allen Abzweigungen gibt, aber nur zu einer Abzweigung gibt es Constraints die von vor der Repeat-Region kommen. Dies ist, was wir als erstes Untersuchen.
+
+Wir ordnen jedem Element $s$ aus $S_0$ jene Knoten aus $H$ zu, welche ausschließlich von $s$ erreicht werden können und bezeichnen die Menge dieser Knoten mit $V_s$ (es gilt stets $s \in V_s$). Nun erstellen wir für jedes $s$ aus $S_0$ eine Menge $P_s$ aus Contigs in $P$ welche Constraints in $V_s$ aufweisen. Die $P_s$ Mengen schneiden wir (der Schnitt ist nicht leer da $a^*$ immer enthalten ist) und ermitteln den Contig $l$ mit der niedrigsten Position aus dem Schnitt. Schließlich berechnen wir für jedes $s$ die Anzahl $k_s$ der Contigs aus $P_s$ welche vor $l$ liegt. Sollte für ein $\hat{s}$ aus $S_0$ gelten, dass $k_{\hat{s}} \geq 5k_s+2$ für alle anderen $s \in S_0$ gilt, so ist dies ein deutliches Zeichen, dass  $\hat{s}$ der nächste Contig ist. 
+
+
+\begin{figure}
+	\begin{center}
+		\includegraphics[width=1\textwidth]{bilder/repeat_kreis}
+	\end{center}
+	\label{repeat_kreis}
+	\caption{repeat in den Daten}
+\end{figure}
+Sollte dies nicht der Fall sein, so wird noch ein zweiter Aspekt betrachet. Wie in Abbildung \ref{repeat_kreis} angedeutet, erzeugt ein Repeat in Daten ein Kreis in den dazugehörigen Graphen. Befinden wir uns gerade im roten Abschnitt, und haben den Kreis noch nicht durchlaufen, so sollten wir zuerst den Kreis gehen. Wenn wir den Kreisdurchlaufen haben, können wir immer noch den anderen Abzweig nehmen.
+
+Leider sind diese Kreise nicht so eindeutig zu identifizieren. Es würde reichen, dass ein Constraint von einem der letzen Contigs zu einem der ersten Contigs geht, damit jeder Contig von jedem erreichbar ist. Somit kann man nicht einfach nach einem Kreis in $G$ suchen. Daher schränken wir $G$ auf die Knoten ein, die noch nicht besucht wurden und suchen dann $s_1,s_2 \in S_0$, sodass es einen Weg von $s_1$ nach $s_2$ gibt, aber keinen Weg von $s_2$ nach $s_1$. In so einem Fall werfen wir $s_2$ aus $S_0$ raus.
+
+Sollten wir es geschafft haben uns auf ein Pfad festzulegen, so wird dieser beschritten, ansonsten werden alle Pfade die noch nicht ausgeschlossen werden konnten, nacheinander ausprobiert und deren Lösungen gesammelt zurückgegeben.
+
+Wenn es keine weiteren Contigs gibt und die Länge vom Strang im erlaubten Bereich ist, so wird die Lösung zurückgegeben.
+
+Gibt es mehr als eine Lösung, so werden die Lösungen anhand der Anzahl der verwendeten Contigs und der Anzahl an Repeats verglichen (viele Contigs und wenig Repeats sind gut).
+
+
+
+
+
+
+\section{Algorithmus Phase 2: Lösung mithilfe vom LP verfeinern}
+Wir haben jetzt bereits einen groben Aufbau und wollen diesen verbessern. Dazu werden wir einen Teil der Contigs mithilfe des LPs setzen wärend der andere Teil fixiert bleibt. Schließlich werden wir für jeden Contig schauen, wie er umpositioniert werden müsste um seine Constraints gut zu erfüllen und wir ermitteln mithilfe einer Güte, ob und wo der Contig Repeats hat. Dieser Prozess wird mehrfach wiederholt, bis alle Kriterien an einer guten Lösung erfüllt sind.
+\section{Auswertung der Ergebnisse}
+\section{Diskussion}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% ENDE TEXTTEIL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+% Entfernen Sie das Kommentar aus der nachfolgenden Zeile, falls Sie einen Anhang in der Arbeit verwenden wollen. Beachten Sie, dass Sie sich im Verlauf der Arbeit mit \ref{...} (z.B. \ref{anhang:zusatz1}) auf den Anhang beziehen.
+%\input{anhang}
+%\bibliography{references}
+%\bibliographystyle{alphadin}
+\DeclareNameAlias{sortname}{first-last}
+\printbibliography[heading=bibintoc, title=References]
+%\vspace*{\fill}
+\clearpage
+\listoffigures
+\listoftables
+%\pagebreak
+%\printindex
+\end{document}

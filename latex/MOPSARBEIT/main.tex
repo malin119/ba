@@ -1,0 +1,132 @@
+\documentclass[12pt,a4paper,DIV12,oneside,chapterprefix,enabledeprecatedfontcommands]{book}
+
+
+%\usepackage[english, ngerman]{babel}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+
+\selectlanguage{english}
+
+
+\usepackage{geometry}
+\geometry{left=2.5cm, top=3cm, bottom=4cm, right=2.5cm}
+
+\usepackage{booktabs}
+\setlength\heavyrulewidth{0.25ex}
+
+%\setlength{\parindent}{0pt}
+\setlength{\parskip}{0em}
+\renewcommand{\baselinestretch}{.3} 
+
+% math
+\usepackage{amsmath, amsfonts, amstext, amsthm, mathptmx, nicefrac, algorithmic ,algorithm, amssymb, mathrsfs}
+% graphics
+\usepackage{subfigure, color}
+\usepackage[pdftex]{graphicx}
+\usepackage{epsfig}
+% Zeichnen mit TikZ
+\usepackage{tikz}
+\usepackage{pgf}
+\usetikzlibrary{arrows,automata}
+\usetikzlibrary{shadows}
+\usetikzlibrary{decorations.pathreplacing}
+\usetikzlibrary{shadows.blur}
+\usetikzlibrary{patterns}
+
+%\usepackage[numbers, numbers]{natbib}
+
+
+%\usepackage{todonotes}
+
+\usepackage{makecell}
+
+% others
+\usepackage{courier, floatflt, makeidx, setspace, lscape}
+\usepackage{xfrac}
+\usepackage{tabularx, multirow}
+% header
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\addtolength{\headheight}{2.5pt}
+\fancyhead{}
+\fancyhead[LE]{\slshape \small \leftmark}
+\fancyhead[RO]{\slshape \small \Titel}
+\fancyfoot{}
+\fancyfoot[LE]{\thepage}
+\fancyfoot[RO]{\thepage}
+\usepackage[plainpages=false,pdfpagelabels]{hyperref}
+\makeatletter
+\newcommand{\anfanglinks}{%
+    \@openrightfalse
+  }
+\newcommand{\anfangrechts}{%
+    \cleardoublepage
+    \@openrighttrue
+}
+
+
+\newcommand{\casestext}[2][2in]{\parbox[t]{#1}{\strut\ignorespace #2\strut}}
+
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\pos}{pos}
+
+\input{makros}
+\begin{document}
+\onehalfspacing
+\frontmatter
+\pagenumbering{Roman}
+\pdfbookmark[0]{Titelseite}{tit}
+\begin{center}
+\begin{tabularx}{0.97\textwidth}{lR}
+\multirow{4}{*}{\includegraphics[width=0.33\textwidth]{unilogo}} & \\
+& \bf\large
+Heinrich-Heine-Universit\"at D\"usseldorf\\
+	 & \bf\large
+Institut f\"ur Informatik\\
+	 & \bf Algorithmische Bioinformatik
+\end{tabularx}
+\end{center}
+\input{titlepage}
+\vfill
+\begin{center}
+\hspace*{-1cm}
+\vspace*{1cm}\huge~\ ~\Typ\\
+    \vspace{1cm}\normalsize vorgelegt\ von\\
+    \large\Autor\\ 23. September 2019 \\%\today \\
+    \vspace{1cm}\normalsize bei\\ \large Prof.\ Dr.\ Gunnar\ Klau \\
+\end{center}
+\cleardoublepage
+\anfanglinks
+\pdfbookmark[0]{\contentsname}{content}
+
+\printindex
+%\include{kapitel/abstract}
+
+\cleardoublepage
+\listoffigures
+
+\tableofcontents
+\cleardoublepage
+
+\anfangrechts
+\mainmatter
+\cleardoublepage
+\include{text}
+\backmatter
+%\input{appendix}
+\renewcommand*{\bibname}{References}
+\bibliography{quellen}
+
+%\bibliographystyle{alphadin}
+\bibliographystyle{abbrvdin}
+
+
+
+
+%\addcontentsline{toc}{chapter}{\listfigurename}
+\cleardoublepage
+\include{erklaerung}
+%\cleardoublepage
+
+\end{document}
